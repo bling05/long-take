@@ -19,8 +19,8 @@ object Topics {
     )
 
     /**
-     * Synopses written with older instructions get rewritten. Bump this when the instructions change;
-     * it's stored with the topics as "rev:N".
+     * Synopses without this tag get rewritten. Bump it when a change to the instructions is worth
+     * redoing existing synopses for; it's stored with the topics as "rev:N".
      */
     const val REVISION_TAG = "rev:2"
 
@@ -38,8 +38,13 @@ object Topics {
         }
     }
 
-    /** A mood pill rather than a subject. Keywords can't tell tone, so only videos Claude rated light show up. */
+    /** A mood pill rather than a subject. Keywords can't tell tone, so it shows videos Claude rated light, plus [lightChannels]. */
     val LIGHTHEARTED = Topic("Lighthearted", emptyList())
+
+    /** Channels whose videos always count as lighthearted, whatever Claude says. */
+    private val lightChannels = setOf(
+        "UCtUbO6rBht0daVIOGML3c8w", // Summoning Salt
+    )
 
     /** Everything shown as a Discover pill: the mood first, then the subjects. */
     val pills = listOf(LIGHTHEARTED) + all
@@ -51,7 +56,7 @@ object Topics {
 
     fun matches(t: Topic, item: VideoWithState): Boolean {
         val picked = item.synopsisTopics
-        if (t == LIGHTHEARTED) return Mood.LIGHT.tag in picked
+        if (t == LIGHTHEARTED) return item.video.channelId in lightChannels || Mood.LIGHT.tag in picked
         val subjects = picked.filterNot(::isTag)
         if (subjects.isNotEmpty()) return t.label in subjects
         val v = item.video
