@@ -3,6 +3,11 @@ package com.longtake.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,10 +24,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -30,9 +37,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -50,6 +62,7 @@ import com.longtake.ai.EssayScore
 import com.longtake.data.AiCheckEntity
 import com.longtake.data.Verdict
 import com.longtake.data.VideoWithState
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 fun formatCount(n: Long): String = when {
@@ -220,16 +233,42 @@ fun VideoList(
     header: (@Composable () -> Unit)? = null,
     empty: @Composable () -> Unit,
 ) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-        if (header != null) item { header() }
-        if (items.isEmpty()) item { empty() }
-        items(items, key = { it.video.id }) { item ->
-            VideoCard(
-                item, item.video.id in checking,
-                onClick = { onOpen(item.video.id) },
-                onToggleSave = { onToggleSave(item) },
-                onToggleWatched = { onToggleWatched(item) },
-            )
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val showScrollUp by remember { derivedStateOf { listState.firstVisibleItemIndex > 4 } }
+
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 24.dp)) {
+            if (header != null) item { header() }
+            if (items.isEmpty()) item { empty() }
+            items(items, key = { it.video.id }) { item ->
+                VideoCard(
+                    item, item.video.id in checking,
+                    onClick = { onOpen(item.video.id) },
+                    onToggleSave = { onToggleSave(item) },
+                    onToggleWatched = { onToggleWatched(item) },
+                )
+            }
+        }
+        AnimatedVisibility(
+            visible = showScrollUp,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut(),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        ) {
+            SmallFloatingActionButton(
+                onClick = {
+                    scope.launch {
+                        // Jump most of the way instantly so a long list doesn't take seconds to animate.
+                        if (listState.firstVisibleItemIndex > 10) listState.scrollToItem(10)
+                        listState.animateScrollToItem(0)
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ) {
+                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Scroll to top")
+            }
         }
     }
 }
