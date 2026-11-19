@@ -71,7 +71,7 @@ class SettingsStore(private val context: Context) {
 
     private fun Preferences.toSettings() = AppSettings(
         youtubeApiKey = this[K.ytKey]?.takeIf { it.isNotBlank() } ?: BuildConfig.YOUTUBE_API_KEY,
-        anthropicApiKey = this[K.anthKey]?.takeIf { it.isNotBlank() } ?: BuildConfig.ANTHROPIC_API_KEY,
+        anthropicApiKey = this[K.anthKey].orEmpty(),
         claudeMode = this[K.mode]?.let { runCatching { ClaudeMode.valueOf(it) }.getOrNull() } ?: ClaudeMode.UNSURE_ONLY,
         claudeModel = this[K.model]?.let { runCatching { ClaudeModel.valueOf(it) }.getOrNull() } ?: ClaudeModel.HAIKU,
         hideAi = this[K.hideAi] ?: true,

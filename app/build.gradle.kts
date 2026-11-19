@@ -24,7 +24,6 @@ android {
         versionCode = 1
         versionName = "1.0"
         buildConfigField("String", "YOUTUBE_API_KEY", "\"${secrets.getProperty("YOUTUBE_API_KEY", "")}\"")
-        buildConfigField("String", "ANTHROPIC_API_KEY", "\"${secrets.getProperty("ANTHROPIC_API_KEY", "")}\"")
         // Profiles / social (Firebase). Leave blank to run without profiles.
         buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${secrets.getProperty("FIREBASE_PROJECT_ID", "")}\"")
         buildConfigField("String", "FIREBASE_APP_ID", "\"${secrets.getProperty("FIREBASE_APP_ID", "")}\"")
