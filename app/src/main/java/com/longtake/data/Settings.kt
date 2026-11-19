@@ -49,6 +49,9 @@ data class AppSettings(
     val claudeEnabled get() = claudeMode != ClaudeMode.OFF && anthropicApiKey.isNotBlank()
 }
 
+/** Discover hides videos shorter than this unless you change it in Settings. */
+const val DEFAULT_MIN_MINUTES = 15
+
 class SettingsStore(private val context: Context) {
     private object K {
         val ytKey = stringPreferencesKey("yt_key")
@@ -79,7 +82,7 @@ class SettingsStore(private val context: Context) {
         hideAi = this[K.hideAi] ?: true,
         hideUnsure = this[K.hideUnsure] ?: false,
         hideWatched = this[K.hideWatched] ?: false,
-        minMinutes = this[K.minMinutes] ?: 15,
+        minMinutes = this[K.minMinutes] ?: DEFAULT_MIN_MINUTES,
         seeded = this[K.seeded] ?: false,
         seedsVersion = this[K.seedsVersion] ?: 1,
         lastRefreshAt = this[K.lastRefresh] ?: 0L,

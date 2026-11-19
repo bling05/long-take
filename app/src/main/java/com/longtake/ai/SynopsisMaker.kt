@@ -94,6 +94,7 @@ class SynopsisMaker(
         } catch (e: AgeRestrictedException) {
             null // no captions without signing in; summarise from the title and description
         } catch (e: Exception) {
+            Log.w("LongTake", "Couldn't get the transcript for $id: $e")
             return false
         }
         val r = writer.write(key, video.title, video.channelTitle, video.description, transcript)

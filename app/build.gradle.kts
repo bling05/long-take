@@ -21,8 +21,8 @@ android {
         applicationId = "com.longtake"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.5"
+        versionCode = 7
+        versionName = "1.6"
         buildConfigField("String", "YOUTUBE_API_KEY", "\"${secrets.getProperty("YOUTUBE_API_KEY", "")}\"")
         // Profiles / social (Firebase). Leave blank to run without profiles.
         buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${secrets.getProperty("FIREBASE_PROJECT_ID", "")}\"")

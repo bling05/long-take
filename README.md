@@ -45,3 +45,9 @@ site/        the recommendations page
 2. `./gradlew assembleDebug`, then install `app/build/outputs/apk/debug/app-debug.apk`.
 
 Tests: `./gradlew testDebugUnitTest`.
+
+The app ships with a starter catalog (`app/src/main/assets/catalog.json`) so new installs don't each look up every channel on YouTube. To refresh it before a release (uses about 2,500 units of YouTube quota):
+
+```
+SNAPSHOT=1 ./gradlew testDebugUnitTest --tests com.longtake.SnapshotTool
+```

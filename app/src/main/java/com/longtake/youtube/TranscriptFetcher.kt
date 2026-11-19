@@ -65,6 +65,9 @@ class TranscriptFetcher(private val http: OkHttpClient) {
                 .put("androidSdkVersion", 34)
                 .put("hl", "en")))
             .put("videoId", videoId)
+            // Click through YouTube's "this video may contain sensitive topics" warning, as the app would.
+            .put("contentCheckOk", true)
+            .put("racyCheckOk", true)
             .toString()
             .toRequestBody("application/json".toMediaType())
         val req = Request.Builder()

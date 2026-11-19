@@ -70,6 +70,7 @@ class Repository(
     }
 
     suspend fun refresh() = refreshLock.withLock {
+        if (!settings.now().seeded) importSnapshot()
         val s = settings.now()
         if (!s.hasYoutubeKey) {
             _status.value = Status(error = "Add your YouTube API key in Settings to load videos.")
@@ -153,6 +154,22 @@ class Repository(
         db.channels().upsert(fetched)
     }
 
+    /** First launch: load the starter catalog bundled with the app instead of looking it all up on YouTube. */
+    private suspend fun importSnapshot() {
+        val text = runCatching { context.assets.open(Snapshot.ASSET).bufferedReader().use { it.readText() } }.getOrNull() ?: return
+        _status.value = Status(busy = true, message = "Loading the starter catalog…")
+        val snap = Snapshot.fromJson(text)
+        db.channels().upsert(snap.channels)
+        snap.playlists.forEach { db.playlists().upsert(it) }
+        db.videos().upsertVideos(snap.videos)
+        snap.sections.forEach { (key, ids) -> db.sections().replace(key, ids) }
+        db.synopses().upsertAll(snap.synopses)
+        snap.synopses.maxOfOrNull { it.createdAt }?.let { settings.setSynopsisSyncedUntil(it) }
+        settings.setSeedsVersion(snap.seedsVersion)
+        settings.setSeeded(true)
+    }
+
+    /** Without a bundled catalog: look up every starter channel on YouTube. */
     private suspend fun seedDefaults() {
         Seeds.channels.forEach { addSeed(it) }
         Seeds.playlists.forEach { db.playlists().upsert(it) }
