@@ -1,6 +1,4 @@
-<img src="site/favicon.svg" alt="" width="88" align="right">
-
-# Long Take
+# <img src="site/favicon.svg" alt="" width="36" align="absmiddle"> Long Take
 
 ### [long-take.web.app](https://long-take.web.app): my video essay recommendations
 
