@@ -38,8 +38,9 @@ data class AppSettings(
     val hideUnsure: Boolean,
     val hideWatched: Boolean,
     val minMinutes: Int,
-    val markWatchedOnOpen: Boolean,
     val seeded: Boolean,
+    /** The highest [com.longtake.data.Seeds.Seed.since] already added to this phone. */
+    val seedsVersion: Int,
     val lastRefreshAt: Long,
     val strictness: EssayScore.Strictness,
     val theme: ThemeMode,
@@ -58,11 +59,12 @@ class SettingsStore(private val context: Context) {
         val hideUnsure = booleanPreferencesKey("hide_unsure")
         val hideWatched = booleanPreferencesKey("hide_watched")
         val minMinutes = intPreferencesKey("min_minutes")
-        val markWatched = booleanPreferencesKey("mark_watched_on_open")
         val seeded = booleanPreferencesKey("seeded")
+        val seedsVersion = intPreferencesKey("seeds_version")
         val lastRefresh = longPreferencesKey("last_refresh")
         val strictness = stringPreferencesKey("essay_strictness")
         val theme = stringPreferencesKey("theme")
+        val synopsisSync = longPreferencesKey("synopsis_synced_until")
     }
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -78,8 +80,8 @@ class SettingsStore(private val context: Context) {
         hideUnsure = this[K.hideUnsure] ?: false,
         hideWatched = this[K.hideWatched] ?: false,
         minMinutes = this[K.minMinutes] ?: 15,
-        markWatchedOnOpen = this[K.markWatched] ?: true,
         seeded = this[K.seeded] ?: false,
+        seedsVersion = this[K.seedsVersion] ?: 1,
         lastRefreshAt = this[K.lastRefresh] ?: 0L,
         theme = this[K.theme]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.DARK,
         strictness = this[K.strictness]?.let { runCatching { EssayScore.Strictness.valueOf(it) }.getOrNull() } ?: EssayScore.Strictness.NORMAL,
@@ -98,6 +100,9 @@ class SettingsStore(private val context: Context) {
     suspend fun setHideUnsure(v: Boolean) = context.dataStore.edit { it[K.hideUnsure] = v }
     suspend fun setHideWatched(v: Boolean) = context.dataStore.edit { it[K.hideWatched] = v }
     suspend fun setMinMinutes(v: Int) = context.dataStore.edit { it[K.minMinutes] = v }
-    suspend fun setMarkWatchedOnOpen(v: Boolean) = context.dataStore.edit { it[K.markWatched] = v }
+    /** Newest shared synopsis already copied to this phone. */
+    suspend fun synopsisSyncedUntil(): Long = context.dataStore.data.first()[K.synopsisSync] ?: 0
+    suspend fun setSynopsisSyncedUntil(v: Long) = context.dataStore.edit { it[K.synopsisSync] = v }
     suspend fun setSeeded(v: Boolean) = context.dataStore.edit { it[K.seeded] = v }
+    suspend fun setSeedsVersion(v: Int) = context.dataStore.edit { it[K.seedsVersion] = v }
 }

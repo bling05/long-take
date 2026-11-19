@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SourcesScreen(repo: Repository) {
+fun SourcesScreen(repo: Repository, onOpen: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     val channels by repo.db.channels().sources().collectAsStateWithLifecycle(initialValue = emptyList())
     val playlists by repo.db.playlists().all().collectAsStateWithLifecycle(initialValue = emptyList())
@@ -60,8 +60,14 @@ fun SourcesScreen(repo: Repository) {
         if (input.isBlank()) return
         busy = true
         scope.launch {
-            message = try { repo.addSource(input) to false } catch (e: Exception) { (e.message ?: "Failed") to true }
-            if (message?.second == false) input = ""
+            try {
+                val added = repo.add(input)
+                input = ""
+                message = if (added.videoId != null) null else added.message to false
+                added.videoId?.let(onOpen)
+            } catch (e: Exception) {
+                message = (e.message ?: "Failed") to true
+            }
             busy = false
         }
     }
@@ -72,14 +78,15 @@ fun SourcesScreen(repo: Repository) {
                 Column(Modifier.padding(horizontal = 16.dp)) {
                     Text(
                         "Discover shows long videos from these channels and playlists. Paste a channel link, @handle, " +
-                            "channel name, or a playlist link (great for curated \"best video essays\" playlists).",
+                            "channel name, or a playlist link (great for curated \"best video essays\" playlists). " +
+                            "Paste a video link to open that one video, for rating something Long Take doesn't list.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.size(8.dp))
                     OutlinedTextField(
                         value = input, onValueChange = { input = it },
-                        label = { Text("Channel or playlist") },
+                        label = { Text("Channel, playlist or video") },
                         placeholder = { Text("@JacobGeller or a youtube.com link") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

@@ -73,7 +73,7 @@ class ClaudeCheck {
 
     suspend fun check(apiKey: String, model: ClaudeModel, title: String, channel: String, transcript: String): Result =
         withContext(Dispatchers.IO) {
-            val excerpt = sample(transcript)
+            val excerpt = transcriptExcerpts(transcript)
             val params = MessageCreateParams.builder()
                 .model(model.id)
                 .maxTokens(4000L)
@@ -105,16 +105,4 @@ class ClaudeCheck {
                 throw ClaudeException("Claude error (${e.statusCode()}): ${e.message}")
             }
         }
-
-    /** Beginning, middle and later excerpts (~2,400 words total) keep the cost low. */
-    private fun sample(transcript: String): String {
-        val words = transcript.split(Regex("\\s+")).filter { it.isNotBlank() }
-        if (words.size <= 2400) return words.joinToString(" ")
-        val chunk = 800
-        val starts = listOf(words.size / 20, words.size / 2 - chunk / 2, (words.size * 0.8).toInt() - chunk / 2)
-        return starts.joinToString("\n\n[…]\n\n") { s ->
-            val st = s.coerceIn(0, words.size - chunk)
-            words.subList(st, st + chunk).joinToString(" ")
-        }
-    }
 }

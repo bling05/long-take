@@ -6,7 +6,8 @@ package com.longtake.data
  * in the Sources tab.
  */
 object Seeds {
-    data class Seed(val handle: String, val name: String)
+    /** [since] is the list version a channel joined in, so phones that already have the list get just the new ones. */
+    data class Seed(val handle: String, val name: String, val since: Int = 1)
 
     val channels = listOf(
         Seed("@JacobGeller", "Jacob Geller"),
@@ -29,7 +30,10 @@ object Seeds {
         Seed("@PeopleMakeGames", "People Make Games"),
         Seed("@LindsayEllisVids", "Lindsay Ellis"),
         Seed("@KaptainKristian", "KaptainKristian"),
+        Seed("@Ah_Lecks", "Ah Lecks", since = 2),
     )
+
+    val VERSION = channels.maxOf { it.since }
 
     /** Curated playlists that collect many different creators' essays (checked Nov 2026). */
     val playlists = listOf(

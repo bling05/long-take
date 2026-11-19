@@ -20,6 +20,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.longtake.BuildConfig
 import com.longtake.data.AppDatabase
+import com.longtake.data.SynopsisEntity
 import com.longtake.data.UserVideoEntity
 import com.longtake.data.VideoEntity
 import kotlinx.coroutines.CoroutineScope
@@ -319,6 +320,23 @@ class SocialRepo(private val context: Context, private val db: AppDatabase) {
         ).await()
     }
 
+    /** Synopses added to the shared collection after [since] (milliseconds), oldest first. */
+    suspend fun synopsesSince(since: Long): List<SynopsisEntity> {
+        val docs = store().collection("synopses").whereGreaterThan("createdAt", since)
+            .orderBy("createdAt").get().await().documents
+        return docs.mapNotNull { d ->
+            val text = d.getString("text") ?: return@mapNotNull null
+            SynopsisEntity(d.id, text, d.getString("topics").orEmpty(), d.getLong("createdAt") ?: 0)
+        }
+    }
+
+    /** Shares a synopsis with everyone. Only the site owner's account may write these (see firestore.rules). */
+    suspend fun shareSynopsis(s: SynopsisEntity) {
+        if (uid != SYNOPSIS_WRITER_UID) return
+        store().collection("synopses").document(s.videoId)
+            .set(mapOf("text" to s.text, "topics" to s.topics, "createdAt" to s.createdAt)).await()
+    }
+
     /** Push one video's rating/review (public) and saved/watched/note (private backup). */
     suspend fun push(videoId: String) {
         val p = readyProfile ?: return
@@ -334,7 +352,8 @@ class SocialRepo(private val context: Context, private val db: AppDatabase) {
         if (user.rating > 0 || review.isNotBlank()) {
             val data = mapOf(
                 "uid" to p.uid, "username" to p.username, "rating" to user.rating, "review" to review,
-                "video" to video.toRef().toMap(), "updatedAt" to user.updatedAt,
+                // Reviews are ordered by this, so it only moves when the rating or review changes.
+                "video" to video.toRef().toMap(), "updatedAt" to (user.reviewedAt.takeIf { it > 0 } ?: user.updatedAt),
             )
             batch.set(publicRef, data); batch.set(videoRef, data)
         } else {
@@ -345,7 +364,7 @@ class SocialRepo(private val context: Context, private val db: AppDatabase) {
             mapOf(
                 "saved" to user.saved, "savedAt" to user.savedAt, "watched" to user.watched, "watchedAt" to user.watchedAt,
                 "rating" to user.rating, "note" to user.note.take(5000), "reviewPublic" to user.reviewPublic,
-                "updatedAt" to user.updatedAt, "video" to video.toRef().toMap(),
+                "updatedAt" to user.updatedAt, "reviewedAt" to user.reviewedAt, "video" to video.toRef().toMap(),
             ),
         )
         batch.commit().await()
@@ -370,6 +389,7 @@ class SocialRepo(private val context: Context, private val db: AppDatabase) {
                     watched = d.getBoolean("watched") ?: false, watchedAt = d.getLong("watchedAt") ?: 0,
                     rating = (d.getLong("rating") ?: 0).toInt(), note = d.getString("note").orEmpty(),
                     reviewPublic = d.getBoolean("reviewPublic") ?: false, updatedAt = remoteUpdated,
+                    reviewedAt = d.getLong("reviewedAt") ?: remoteUpdated,
                 )
             )
         }
@@ -462,3 +482,6 @@ class SocialRepo(private val context: Context, private val db: AppDatabase) {
         )
     }
 }
+
+/** The one account allowed to add shared synopses (@brantonling); everyone else only reads them. */
+const val SYNOPSIS_WRITER_UID = "P2mzQNCtGRYQVUX4Z5DFPg9lb322"

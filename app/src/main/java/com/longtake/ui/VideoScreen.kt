@@ -77,7 +77,6 @@ fun VideoScreen(repo: Repository, videoId: String, onBack: () -> Unit, onOpenPro
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val item by remember(videoId) { repo.db.videos().videoWithState(videoId) }.collectAsStateWithLifecycle(initialValue = null)
-    val settings by repo.settings.flow.collectAsStateWithLifecycle(initialValue = null)
     val checking by repo.checking.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<String?>(null) } // "ai" or "hidden"
     val account by repo.social.state.collectAsStateWithLifecycle()
@@ -86,6 +85,7 @@ fun VideoScreen(repo: Repository, videoId: String, onBack: () -> Unit, onOpenPro
     var communityErr by remember(videoId) { mutableStateOf<String?>(null) }
     var socialMsg by remember { mutableStateOf<String?>(null) }
     // Reload community reviews when this page opens and shortly after you change your own rating/review.
+    LaunchedEffect(videoId) { repo.synopses.ensure(videoId) }
     LaunchedEffect(videoId, account is AccountState.Ready, item?.user?.rating, item?.user?.reviewPublic) {
         if (account is AccountState.Disabled) return@LaunchedEffect
         delay(800)
@@ -138,13 +138,13 @@ fun VideoScreen(repo: Repository, videoId: String, onBack: () -> Unit, onOpenPro
             it.channel?.takeIf { c -> c.subscribers > 0 }?.let { c ->
                 Text("${formatCount(c.subscribers)} subscribers", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            it.synopsis?.let { s ->
+                Text(s.text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 10.dp))
+            }
             Spacer(Modifier.height(12.dp))
 
             Button(
-                onClick = {
-                    openOnYouTube(ctx, v.id)
-                    if (settings?.markWatchedOnOpen == true) scope.launch { repo.setWatched(v.id, true) }
-                },
+                onClick = { openOnYouTube(ctx, v.id) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Filled.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Watch on YouTube")

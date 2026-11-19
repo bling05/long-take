@@ -13,9 +13,10 @@ A small Android app I made for finding and discussing YouTube video essays, for 
 
 ## What it does
 
-- **Discover**: long-form essays from hand-picked channels and curated playlists (including a "YouTube Recs" list and every Jacob Geller video), with topic filters and an "essay score" that sets apart essays from other long videos.
+- **Discover**: long-form essays from hand-picked channels and curated playlists (including a "YouTube Recs" list and every Jacob Geller video), with topic filters (including a "Lighthearted" one for fun, feel-good stories) and an "essay score" that sets apart essays from other long videos.
+- **Synopses**: a one-sentence summary under every video, written by Claude from the transcript. Each video is summarised once and shared with everyone using the app.
 - **Sorting**: most viewed, newest, longest, or "hidden gems" (videos that did unusually well for the size of their channel), plus a strictness slider for how essay-like a video has to be.
-- **Your own sources**: add any YouTube channel or playlist by link or @handle, and its long videos join your feed.
+- **Your own sources**: add any YouTube channel or playlist by link or @handle, and its long videos join your feed. Paste a single video link to rate something that isn't listed.
 - **Search**: long videos only, so results skip Shorts and clips.
 - **Library**: saved videos, watch history (it can import your YouTube history from Google Takeout), and your ratings and notes.
 - **Profiles**: Letterboxd-style ratings and reviews, four favourite essays, following friends, and a feed of what they've rated. Notes stay private unless you share them as a review.

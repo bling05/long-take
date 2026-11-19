@@ -100,7 +100,38 @@ fun SettingsScreen(repo: Repository, onOpenBlocked: () -> Unit) {
             Hint("YouTube doesn't share watch history with apps. To mark everything you've watched: go to takeout.google.com → YouTube → History, choose JSON format, then pick watch-history.json here.")
             OutlinedButton(onClick = { fileLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }) { Text("Import watch-history.json") }
             importMsg?.let { Hint(it) }
-            ToggleRow("Mark as watched when I open a video on YouTube", st.markWatchedOnOpen) { v -> scope.launch { repo.settings.setMarkWatchedOnOpen(v) } }
+
+            Section("Video synopses")
+            Hint("A one- or two-sentence summary under each video. Each video is summarised once and shared with everyone using the app.")
+            val synopsisStatus by repo.synopses.status.collectAsStateWithLifecycle()
+            val feedCount by repo.db.synopses().feedCount().collectAsStateWithLifecycle(initialValue = 0)
+            val doneCount by repo.db.synopses().feedDoneCount().collectAsStateWithLifecycle(initialValue = 0)
+            Text(
+                buildString {
+                    append("$doneCount of $feedCount videos have a synopsis")
+                    if (synopsisStatus.writing) append(" · writing more…")
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+            synopsisStatus.error?.let { Hint(it) }
+            Hint("To write missing ones yourself, add a Claude API key from console.anthropic.com. With Claude Haiku it costs about $0.001 per video.")
+            OutlinedTextField(
+                value = anthKey.orEmpty(), onValueChange = { anthKey = it },
+                label = { Text("Claude API key") }, singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        repo.settings.setAnthropicKey(anthKey.orEmpty())
+                        repo.synopses.syncInBackground()
+                    }
+                },
+                enabled = anthKey != st.anthropicApiKey,
+                modifier = Modifier.padding(top = 6.dp),
+            ) { Text("Save key") }
 
             if (Features.AI_CHECK) {
                 Section("AI-script check")
@@ -119,21 +150,9 @@ fun SettingsScreen(repo: Repository, onOpenBlocked: () -> Unit) {
                         Column { Text(m.label); Hint(m.costNote) }
                     }
                 }
-                OutlinedTextField(
-                    value = anthKey.orEmpty(), onValueChange = { anthKey = it },
-                    label = { Text("Claude API key (from console.anthropic.com)") }, singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
-                Button(
-                    onClick = { scope.launch { repo.settings.setAnthropicKey(anthKey.orEmpty()) } },
-                    enabled = anthKey != st.anthropicApiKey,
-                    modifier = Modifier.padding(top = 6.dp),
-                ) { Text("Save key") }
                 if (st.claudeMode != ClaudeMode.OFF && st.anthropicApiKey.isBlank()) {
-                    Hint("Without a Claude key, only the free check runs.")
+                    Hint("Uses the Claude key under Video synopses. Without one, only the free check runs.")
                 }
-
             }
 
             Section("Filters")

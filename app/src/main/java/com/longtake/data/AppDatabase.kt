@@ -56,7 +56,7 @@ interface VideoDao {
     fun watched(): Flow<List<VideoWithState>>
 
     @Transaction
-    @Query("SELECT v.* FROM videos v JOIN user_videos u ON u.videoId = v.id WHERE u.rating > 0 OR u.note != '' ORDER BY u.updatedAt DESC")
+    @Query("SELECT v.* FROM videos v JOIN user_videos u ON u.videoId = v.id WHERE u.rating > 0 OR u.note != '' ORDER BY u.reviewedAt DESC")
     fun ratedOrNoted(): Flow<List<VideoWithState>>
 
     @Query("DELETE FROM videos WHERE fromSource = 0 AND id NOT IN (SELECT videoId FROM user_videos) AND fetchedAt < :before")
@@ -174,12 +174,35 @@ interface SectionDao {
     }
 }
 
+@Dao
+interface SynopsisDao {
+    @Upsert
+    suspend fun upsert(s: SynopsisEntity)
+
+    @Upsert
+    suspend fun upsertAll(s: List<SynopsisEntity>)
+
+    @Query("SELECT * FROM synopses WHERE videoId = :id")
+    suspend fun get(id: String): SynopsisEntity?
+
+    /** Feed videos without an up-to-date synopsis (one with a mood), most viewed first. */
+    @Query("SELECT id FROM videos WHERE fromSource = 1 AND id NOT IN (SELECT videoId FROM synopses WHERE topics LIKE '%mood:%') ORDER BY views DESC")
+    suspend fun missingForFeed(): List<String>
+
+    @Query("SELECT COUNT(*) FROM videos WHERE fromSource = 1")
+    fun feedCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM synopses WHERE topics LIKE '%mood:%' AND videoId IN (SELECT id FROM videos WHERE fromSource = 1)")
+    fun feedDoneCount(): Flow<Int>
+}
+
 @Database(
     entities = [
         VideoEntity::class, ChannelEntity::class, PlaylistEntity::class,
         AiCheckEntity::class, UserVideoEntity::class, WatchHistoryEntity::class, SectionVideoEntity::class,
+        SynopsisEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -190,11 +213,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userVideos(): UserVideoDao
     abstract fun watchHistory(): WatchHistoryDao
     abstract fun sections(): SectionDao
+    abstract fun synopses(): SynopsisDao
 
     companion object {
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "longtake.db")
-                .addMigrations(MIGRATION_3_4)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .fallbackToDestructiveMigration()
                 .build()
     }
@@ -204,5 +228,20 @@ abstract class AppDatabase : RoomDatabase() {
 val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
     override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `section_videos` (`section` TEXT NOT NULL, `videoId` TEXT NOT NULL, PRIMARY KEY(`section`, `videoId`))")
+    }
+}
+
+/** Adds the synopses table. */
+val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+    override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `synopses` (`videoId` TEXT NOT NULL, `text` TEXT NOT NULL, `topics` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`videoId`))")
+    }
+}
+
+/** Gives reviews their own timestamp; existing ones start from when the video was last touched. */
+val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
+    override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `user_videos` ADD COLUMN `reviewedAt` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("UPDATE `user_videos` SET `reviewedAt` = `updatedAt` WHERE `rating` > 0 OR `note` != ''")
     }
 }

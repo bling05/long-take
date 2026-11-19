@@ -49,7 +49,7 @@
   .sort button[aria-pressed="true"] { color: var(--ink); text-decoration: none; cursor: default; }
 
   .entry {
-    display: grid; grid-template-columns: 52px 1fr 132px; gap: 18px;
+    display: grid; grid-template-columns: 52px minmax(0, 1fr) 132px; gap: 18px;
     padding: 18px 0; border-top: 1px solid var(--rule); align-items: start;
   }
   .entry:last-child { border-bottom: 1px solid var(--rule); }
@@ -76,8 +76,10 @@
   @media (max-width: 560px) {
     body { font-size: 18px; }
     .page { padding: 44px 16px 72px; }
-    .entry { grid-template-columns: 40px 1fr; }
-    .thumb { display: none; }
+    /* The thumbnail moves above the title, beside the date. */
+    .entry { grid-template-columns: 40px minmax(0, 1fr); row-gap: 10px; }
+    .thumb { grid-column: 2; grid-row: 1; }
+    .body { grid-column: 2; grid-row: 2; }
     .title { font-size: 19px; }
   }
 </style>
@@ -172,7 +174,7 @@ function entryHtml(e) {
   return `
     <article class="entry">
       <div class="date"><b>${d.getDate()}</b>${monthLabel(d)}</div>
-      <div>
+      <div class="body">
         <a class="title" href="${yt(v.videoId)}" target="_blank" rel="noopener">${esc(v.title)}</a>
         <div class="meta">${esc(v.channelTitle)}${v.durationSec ? " · " + mins(v.durationSec) : ""}</div>
         <div class="stars" aria-label="${e.rating} out of 5">${stars(e.rating)}</div>

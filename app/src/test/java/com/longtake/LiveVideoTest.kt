@@ -67,6 +67,19 @@ class LiveVideoTest {
         }
     }
 
+    /** CLAUDE_TEST_KEY=... LIVE_VIDEOS=id,id : writes synopses the way the app does and prints them. */
+    @Test fun liveSynopsis() = runBlocking {
+        val key = System.getenv("CLAUDE_TEST_KEY"); val ids = System.getenv("LIVE_VIDEOS")
+        assumeTrue("set CLAUDE_TEST_KEY and LIVE_VIDEOS", !key.isNullOrBlank() && !ids.isNullOrBlank())
+        for (id in ids!!.split(",").map { it.trim() }) {
+            val t = runCatching { TranscriptFetcher(http).fetch(id) }.getOrNull()
+            val meta = runCatching { JSONObject(get("https://www.youtube.com/oembed?format=json&url=https://www.youtube.com/watch?v=$id")) }.getOrNull()
+            val title = t?.title?.ifBlank { null } ?: meta?.optString("title").orEmpty()
+            val r = com.longtake.ai.SynopsisWriter().write(key!!, title, meta?.optString("author_name").orEmpty(), t?.description.orEmpty(), t?.text)
+            println("SYNOPSIS $id | $title\n  ${r.synopsis}\n  topics=${r.topics} mood=${r.mood} transcript=${t != null} tokens in=${r.inputTokens} out=${r.outputTokens}")
+        }
+    }
+
     /** CLAUDE_TEST_KEY=... LIVE_VIDEOS=id : runs the app's Claude check on a real transcript. */
     @Test fun liveClaude() = runBlocking {
         val key = System.getenv("CLAUDE_TEST_KEY"); val ids = System.getenv("LIVE_VIDEOS")

@@ -5,6 +5,8 @@ import android.net.Uri
 import com.longtake.Features
 import com.longtake.ai.AiChecker
 import com.longtake.ai.ClaudeCheck
+import com.longtake.ai.SynopsisWriter
+import com.longtake.ai.SynopsisMaker
 import com.longtake.social.SocialRepo
 import com.longtake.social.SocialRepo.Companion.toEntity
 import com.longtake.social.VideoRef
@@ -29,6 +31,7 @@ class Repository(
     val youtube: YouTubeApi,
     private val transcripts: TranscriptFetcher,
     private val claude: ClaudeCheck,
+    synopsisWriter: SynopsisWriter,
     val social: SocialRepo,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -41,6 +44,9 @@ class Repository(
     /** The AI-script check (switched off by [com.longtake.Features.AI_CHECK]). */
     val aiCheck = AiChecker(db, settings, transcripts, claude, scope)
     val checking: StateFlow<Set<String>> get() = aiCheck.checking
+
+    /** Short "what it's about" texts under each video. */
+    val synopses = SynopsisMaker(db, settings, transcripts, synopsisWriter, social, scope)
 
     fun recheck(id: String) = aiCheck.recheck(id)
 
@@ -56,7 +62,10 @@ class Repository(
     fun refreshIfStale() {
         scope.launch {
             val last = settings.now().lastRefreshAt
-            if (System.currentTimeMillis() - last > 12L * 3_600_000) refresh() else aiCheck.checkUncheckedInBackground()
+            if (System.currentTimeMillis() - last > 12L * 3_600_000) refresh() else {
+                aiCheck.checkUncheckedInBackground()
+                synopses.syncInBackground()
+            }
         }
     }
 
@@ -68,7 +77,7 @@ class Repository(
         }
         try {
             _status.value = Status(busy = true, message = "Loading channels…")
-            if (!s.seeded) seedDefaults()
+            if (!s.seeded) seedDefaults() else if (s.seedsVersion < Seeds.VERSION) seedNewChannels(s.seedsVersion)
 
             val sources = db.channels().sourcesNow()
             val newIds = mutableListOf<String>()
@@ -128,6 +137,7 @@ class Repository(
             settings.setLastRefresh(System.currentTimeMillis())
             _status.value = Status(message = if (videos.isEmpty()) "Up to date" else "Added ${videos.size} videos")
             aiCheck.checkUncheckedInBackground()
+            synopses.syncInBackground()
         } catch (e: Exception) {
             _status.value = Status(error = e.message ?: "Something went wrong")
         }
@@ -144,21 +154,53 @@ class Repository(
     }
 
     private suspend fun seedDefaults() {
-        for (seed in Seeds.channels) {
-            _status.value = Status(busy = true, message = "Adding ${seed.name}…")
-            val ch = runCatching { youtube.channelByHandle(seed.handle) }.getOrNull()
-                ?: runCatching { youtube.searchChannel(seed.name) }.getOrNull()
-                ?: continue
-            db.channels().upsert(listOf(ch.copy(isSource = true)))
-        }
+        Seeds.channels.forEach { addSeed(it) }
         Seeds.playlists.forEach { db.playlists().upsert(it) }
         settings.setSeeded(true)
+        settings.setSeedsVersion(Seeds.VERSION)
+    }
+
+    /** Channels added to the starter list after this phone got it (blocked channels stay blocked). */
+    private suspend fun seedNewChannels(after: Int) {
+        Seeds.channels.filter { it.since > after }.forEach { addSeed(it) }
+        settings.setSeedsVersion(Seeds.VERSION)
+    }
+
+    private suspend fun addSeed(seed: Seeds.Seed) {
+        _status.value = Status(busy = true, message = "Adding ${seed.name}…")
+        val ch = runCatching { youtube.channelByHandle(seed.handle) }.getOrNull()
+            ?: runCatching { youtube.searchChannel(seed.name) }.getOrNull()
+            ?: return
+        val existing = db.channels().get(ch.id)
+        if (existing?.isBlocked == true) return
+        db.channels().upsert(listOf(ch.copy(isSource = true, topFetched = existing?.topFetched ?: false)))
+    }
+
+    /** What adding something on the Sources screen did; [videoId] is set when it was a single video to open. */
+    data class Added(val message: String, val videoId: String? = null)
+
+    /** Adds a channel or playlist to Discover, or fetches a single video (from its link) so it can be rated. */
+    suspend fun add(input: String): Added {
+        val text = input.trim()
+        // A video link wins even when it also names a playlist (watch?v=…&list=…).
+        val videoId = Regex("""(?:youtube\.com/(?:watch\?(?:.*&)?v=|shorts/|live/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})""")
+            .find(text)?.groupValues?.get(1)
+        if (videoId != null) return addVideo(videoId)
+        return Added(addSource(text))
+    }
+
+    private suspend fun addVideo(id: String): Added {
+        if (db.videos().getVideos(listOf(id)).isEmpty()) {
+            val v = youtube.videos(listOf(id), fromSource = false).firstOrNull() ?: return Added("Couldn't find that video.")
+            db.videos().upsertVideos(listOf(v))
+            refreshChannelStats(listOf(v.channelId))
+        }
+        return Added("Opened the video.", id)
     }
 
     /** Accepts a channel URL, @handle, channel ID, playlist URL, or a plain channel name. */
-    suspend fun addSource(input: String): String {
-        val text = input.trim()
-        if (text.isBlank()) return "Type a channel or playlist."
+    private suspend fun addSource(text: String): String {
+        if (text.isBlank()) return "Type a channel, playlist or video."
         val playlistId = Regex("[?&]list=([A-Za-z0-9_-]+)").find(text)?.groupValues?.get(1)
             ?: text.takeIf { it.matches(Regex("^(PL|OL|UU|FL)[A-Za-z0-9_-]{10,}$")) }
         if (playlistId != null) {
@@ -219,7 +261,10 @@ class Repository(
 
     private suspend fun updateUser(id: String, f: (UserVideoEntity) -> UserVideoEntity) {
         val cur = db.userVideos().get(id) ?: UserVideoEntity(videoId = id)
-        db.userVideos().upsert(f(cur).copy(updatedAt = System.currentTimeMillis()))
+        val now = System.currentTimeMillis()
+        var next = f(cur).copy(updatedAt = now)
+        if (next.rating != cur.rating || next.note != cur.note || next.reviewPublic != cur.reviewPublic) next = next.copy(reviewedAt = now)
+        db.userVideos().upsert(next)
         scope.launch { runCatching { social.push(id) } }
     }
 

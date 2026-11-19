@@ -75,8 +75,8 @@ fun DiscoverScreen(repo: Repository, onOpen: (String) -> Unit) {
                 val ids = sectionIds[section.key].orEmpty()
                 sortVideos(applySectionFilters(feed.filter { it.video.id in ids }, s), sort)
             } else {
-                val t = Topics.all.firstOrNull { it.label == topic }
-                sortVideos(applyFilters(feed, s, s.hideWatched).filter { t == null || Topics.matches(t, it.video) }, sort)
+                val t = Topics.pills.firstOrNull { it.label == topic }
+                sortVideos(applyFilters(feed, s, s.hideWatched).filter { t == null || Topics.matches(t, it) }, sort)
             }
         }
     }
@@ -108,7 +108,7 @@ fun DiscoverScreen(repo: Repository, onOpen: (String) -> Unit) {
             ) {
                 TopicPill("All", topic == null) { topic = null }
                 Sections.all.forEach { sec -> TopicPill(sec.label, topic == sec.label) { topic = if (topic == sec.label) null else sec.label } }
-                Topics.all.forEach { t -> TopicPill(t.label, topic == t.label) { topic = if (topic == t.label) null else t.label } }
+                Topics.pills.forEach { t -> TopicPill(t.label, topic == t.label) { topic = if (topic == t.label) null else t.label } }
             }
             if (s != null) {
                 Text(

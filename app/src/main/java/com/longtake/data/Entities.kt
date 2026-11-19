@@ -1,5 +1,6 @@
 package com.longtake.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -105,6 +106,8 @@ data class UserVideoEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     /** Share the note publicly as a review on your profile. */
     val reviewPublic: Boolean = false,
+    /** When the rating or review last changed (saving or marking watched doesn't count): orders reviews. */
+    @ColumnInfo(defaultValue = "0") val reviewedAt: Long = 0,
 )
 
 /** A video joined with the user's data and its AI check. */
@@ -116,7 +119,12 @@ data class VideoWithState(
     val ai: AiCheckEntity?,
     @Relation(parentColumn = "channelId", entityColumn = "id")
     val channel: ChannelEntity?,
+    @Relation(parentColumn = "id", entityColumn = "videoId")
+    val synopsis: SynopsisEntity?,
 ) {
+    /** Topic labels Claude gave this video, if it has a synopsis. */
+    val synopsisTopics: List<String> get() = synopsis?.topics?.split('|')?.filter { it.isNotBlank() }.orEmpty()
+
     /** How much this looks like a video essay (see EssayScore). */
     fun essay(): com.longtake.ai.EssayScore.Result = com.longtake.ai.EssayScore.score(
         title = video.title,
@@ -143,3 +151,16 @@ data class SectionVideoEntity(
     val section: String,
     val videoId: String,
 )
+
+/** A short "what it's about" written by Claude, plus the Discover topics it picked. Shared through Firestore. */
+@Entity(tableName = "synopses")
+data class SynopsisEntity(
+    @PrimaryKey val videoId: String,
+    val text: String,
+    /** Topic labels from [Topics.all] plus a mood tag ([Topics.Mood]), separated by "|". */
+    val topics: String,
+    val createdAt: Long = System.currentTimeMillis(),
+) {
+    /** Written with the current instructions; older synopses (without a mood) get rewritten. */
+    val isCurrent: Boolean get() = topics.split('|').any(Topics.Mood::isTag)
+}

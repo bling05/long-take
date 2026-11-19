@@ -2,6 +2,7 @@ package com.longtake
 
 import android.app.Application
 import com.longtake.ai.ClaudeCheck
+import com.longtake.ai.SynopsisWriter
 import com.longtake.data.AppDatabase
 import com.longtake.data.Repository
 import com.longtake.data.SettingsStore
@@ -24,6 +25,6 @@ class LongTakeApp : Application() {
         val settings = SettingsStore(this)
         val youtube = YouTubeApi(http = http, apiKey = { settings.now().youtubeApiKey })
         val db = AppDatabase.create(this)
-        repo = Repository(this, db, settings, youtube, TranscriptFetcher(http), ClaudeCheck(), SocialRepo(this, db))
+        repo = Repository(this, db, settings, youtube, TranscriptFetcher(http), ClaudeCheck(), SynopsisWriter(), SocialRepo(this, db))
     }
 }
