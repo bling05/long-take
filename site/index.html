@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>branton's video essay recs</title>
+<meta name="description" content="Video essays I'd recommend, as I watch them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="color-scheme" content="light">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f3ede2;
+    --ink: #2a2420;
+    --soft: #6d6257;
+    --faint: #b7ab9b;
+    --rule: #d9cfbf;
+    --accent: #a2471c;
+    --thumb-bg: #e4dacb;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 19px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 720px; margin: 0 auto; padding: 72px 24px 96px; }
+  p { margin: 0; }
+  a { color: inherit; }
+  h1 {
+    font-weight: 400;
+    font-size: clamp(34px, 6vw, 48px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+  }
+  .sort { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--faint); margin: 0 0 28px; }
+  .sort button {
+    padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: var(--soft);
+    text-decoration: underline; text-decoration-color: var(--faint); text-underline-offset: 4px;
+  }
+  .sort button:hover { color: var(--ink); text-decoration-color: var(--accent); }
+  .sort button[aria-pressed="true"] { color: var(--ink); text-decoration: none; cursor: default; }
+
+  .entry {
+    display: grid; grid-template-columns: 52px 1fr 132px; gap: 18px;
+    padding: 18px 0; border-top: 1px solid var(--rule); align-items: start;
+  }
+  .entry:last-child { border-bottom: 1px solid var(--rule); }
+  .date { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft); line-height: 1.2; padding-top: 4px; }
+  .date b { display: block; font-weight: 500; font-size: 18px; color: var(--ink); }
+  .title { font-size: 21px; line-height: 1.25; font-weight: 500; text-decoration: none; }
+  .title:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  .meta { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft); margin-top: 3px; }
+  .stars { color: var(--accent); letter-spacing: 2px; font-size: 15px; margin-top: 6px; }
+  .stars span { color: var(--faint); }
+  .note { margin-top: 8px; font-style: italic; }
+  .thumb img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--thumb-bg); border-radius: 2px; }
+  .empty { color: var(--soft); font-style: italic; padding: 24px 0; }
+
+  .more {
+    margin-top: 20px; padding: 0; border: 0; background: none; cursor: pointer;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft);
+    text-decoration: underline; text-decoration-color: var(--faint); text-underline-offset: 4px;
+  }
+  .more:hover { color: var(--ink); text-decoration-color: var(--accent); }
+  footer { margin-top: 56px; color: var(--soft); font-size: 15px; }
+  footer p { max-width: 36em; }
+
+  @media (max-width: 560px) {
+    body { font-size: 18px; }
+    .page { padding: 44px 16px 72px; }
+    .entry { grid-template-columns: 40px 1fr; }
+    .thumb { display: none; }
+    .title { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>branton's video essay recs</h1>
+  <p class="sort">sort: <button type="button" data-sort="recent">recent</button> · <button type="button" data-sort="stars">stars</button></p>
+  <div id="list"><p class="empty">Loading…</p></div>
+  <button type="button" id="more" class="more" hidden>more →</button>
+  <footer>
+    <p>Logged with Long Take, a small Android app I made for finding and discussing video essays for my own enjoyment.</p>
+  </footer>
+</main>
+
+<script>
+/* ---- Settings ----------------------------------------------------------- */
+// The one Long Take account this site shows: its permanent ID (not its username),
+// so nobody else's ratings can ever appear here.
+const OWNER_UID = "P2mzQNCtGRYQVUX4Z5DFPg9lb322"; // @brantonling
+const PROJECT = "long-take";
+/* ------------------------------------------------------------------------ */
+
+// Testing only: on this computer, ?local=1&u=name reads from the local test server instead.
+const params = new URLSearchParams(location.search);
+const isLocalTest = ["localhost", "127.0.0.1", "10.0.2.2"].includes(location.hostname) && params.has("local");
+const base = isLocalTest
+  ? `http://${location.hostname}:8080/v1/projects/demo-essayfinder/databases/(default)/documents`
+  : `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
+
+// Firestore's REST format wraps every value in its type; this unwraps it.
+function plain(v) {
+  if (!v) return null;
+  if ("stringValue" in v) return v.stringValue;
+  if ("integerValue" in v) return Number(v.integerValue);
+  if ("doubleValue" in v) return v.doubleValue;
+  if ("booleanValue" in v) return v.booleanValue;
+  if ("arrayValue" in v) return (v.arrayValue.values || []).map(plain);
+  if ("mapValue" in v) return fields(v.mapValue.fields || {});
+  return null;
+}
+function fields(f) { const o = {}; for (const k in f) o[k] = plain(f[k]); return o; }
+
+async function getDoc(path) {
+  const r = await fetch(`${base}/${path}`);
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return fields((await r.json()).fields || {});
+}
+// Reads ratings a batch at a time, so each visit only reads what's shown.
+// "recent": newest first. "stars": most stars first, and among equal stars the earliest first.
+const ORDER = { recent: "updatedAt desc", stars: "rating desc,updatedAt asc" };
+function ratingReader(uid, sort) {
+  let token = "", done = false;
+  return {
+    get done() { return done; },
+    async next(size) {
+      if (done) return [];
+      // Built by hand: URLSearchParams turns the space into "+", which Firestore doesn't accept.
+      let q = `pageSize=${size}&orderBy=${encodeURIComponent(ORDER[sort])}`;
+      if (token) q += `&pageToken=${encodeURIComponent(token)}`;
+      const r = await fetch(`${base}/users/${uid}/ratings?${q}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      token = j.nextPageToken || "";
+      if (!token) done = true;
+      return (j.documents || []).map(d => fields(d.fields || {}));
+    },
+  };
+}
+
+const list = document.getElementById("list");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const yt = id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
+const mins = s => { const m = Math.round((s || 0) / 60); return m >= 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m} min`; };
+const stars = n => "★".repeat(n) + `<span>${"★".repeat(5 - n)}</span>`;
+// YouTube's "hqdefault" thumbnails are letterboxed with black bars; the 16:9 "mqdefault" size isn't.
+const thumb = u => String(u || "").replace("/hqdefault.", "/mqdefault.");
+const thisYear = new Date().getFullYear();
+const monthLabel = d => d.toLocaleDateString("en-GB", { month: "short" }).toLowerCase().slice(0, 3)
+  + (d.getFullYear() === thisYear ? "" : ` '${String(d.getFullYear()).slice(2)}`);
+
+// 20 picks per page (?per=N overrides it, for testing).
+const PER_PAGE = Math.min(Math.max(Number(params.get("per")) || 20, 1), 50);
+const more = document.getElementById("more");
+const sortButtons = document.querySelectorAll(".sort button");
+let reader = null, shown = 0, uid = OWNER_UID;
+let sort = params.get("sort") === "stars" ? "stars" : "recent";
+
+function entryHtml(e) {
+  const v = e.video, d = new Date(e.updatedAt), note = (e.review || "").trim();
+  return `
+    <article class="entry">
+      <div class="date"><b>${d.getDate()}</b>${monthLabel(d)}</div>
+      <div>
+        <a class="title" href="${yt(v.videoId)}" target="_blank" rel="noopener">${esc(v.title)}</a>
+        <div class="meta">${esc(v.channelTitle)}${v.durationSec ? " · " + mins(v.durationSec) : ""}</div>
+        <div class="stars" aria-label="${e.rating} out of 5">${stars(e.rating)}</div>
+        ${note ? `<p class="note">${esc(note)}</p>` : ""}
+      </div>
+      <a class="thumb" href="${yt(v.videoId)}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"><img src="${esc(thumb(v.thumbnailUrl))}" alt="" loading="lazy"></a>
+    </article>`;
+}
+
+// Fetch until we have a page's worth of rated videos, or run out.
+async function loadPage() {
+  const picks = [];
+  while (picks.length < PER_PAGE && !reader.done) {
+    const batch = await reader.next(PER_PAGE);
+    picks.push(...batch.filter(e => e.video && e.video.videoId && e.rating >= 1));
+  }
+  if (!shown && !picks.length) { list.innerHTML = `<p class="empty">Nothing here yet.</p>`; return; }
+  if (!shown) list.innerHTML = "";
+  list.insertAdjacentHTML("beforeend", picks.map(entryHtml).join(""));
+  shown += picks.length;
+  more.hidden = reader.done;
+}
+
+more.addEventListener("click", async () => {
+  more.disabled = true; more.textContent = "loading…";
+  try {
+    await loadPage();
+    more.textContent = "more →";
+  } catch (err) {
+    console.error(err);
+    more.textContent = "couldn't load, try again →";
+  }
+  more.disabled = false;
+});
+
+// Starts the list over in the chosen order. The choice is kept in the address (?sort=stars) so it can be shared.
+async function start() {
+  sortButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sort === sort)));
+  shown = 0; more.hidden = true;
+  list.innerHTML = `<p class="empty">Loading…</p>`;
+  reader = ratingReader(uid, sort);
+  try {
+    await loadPage();
+  } catch (err) {
+    list.innerHTML = `<p class="empty">Couldn't load the list right now. Try again in a minute.</p>`;
+    console.error(err);
+  }
+}
+
+sortButtons.forEach(b => b.addEventListener("click", () => {
+  if (b.dataset.sort === sort) return;
+  sort = b.dataset.sort;
+  const url = new URL(location.href);
+  if (sort === "stars") url.searchParams.set("sort", "stars"); else url.searchParams.delete("sort");
+  history.replaceState(null, "", url);
+  start();
+}));
+
+(async () => {
+  if (isLocalTest && params.get("u")) {
+    try {
+      const n = await getDoc(`usernames/${params.get("u").toLowerCase()}`);
+      uid = n ? n.uid : "";
+    } catch (err) { console.error(err); }
+  }
+  start();
+})();
+</script>
+</body>
+</html>

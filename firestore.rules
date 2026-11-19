@@ -1,0 +1,74 @@
+rules_version = '2';
+
+// Who can read and write what in Essay Finder's online database.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isUser(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // A public rating or review, as stored on profiles and video pages.
+    function validEntry(uid) {
+      let d = request.resource.data;
+      return d.uid == uid
+        && d.rating is int && d.rating >= 0 && d.rating <= 5
+        && d.review is string && d.review.size() <= 2000
+        && d.username is string
+        && d.video is map
+        && d.updatedAt is int;
+    }
+
+    match /users/{uid} {
+      allow read: if true;
+      // Creating a profile must claim the matching username in the same step.
+      allow create: if isUser(uid)
+        && request.resource.data.username is string
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid;
+      // Usernames can't be changed by editing the profile.
+      allow update: if isUser(uid)
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 40
+        && request.resource.data.bio is string && request.resource.data.bio.size() <= 300
+        && request.resource.data.favorites is list && request.resource.data.favorites.size() <= 4;
+      allow delete: if isUser(uid);
+
+      match /ratings/{videoId} {
+        allow read: if true;
+        allow create, update: if isUser(uid) && validEntry(uid);
+        allow delete: if isUser(uid);
+      }
+      // Private backup: only the owner can see it.
+      match /private/{videoId} {
+        allow read, write: if isUser(uid);
+      }
+      match /following/{other} {
+        allow read: if true;
+        allow write: if isUser(uid) && other != uid;
+      }
+      // Only the follower can add or remove themselves from someone's followers.
+      match /followers/{other} {
+        allow read: if true;
+        allow write: if isUser(other) && other != uid;
+      }
+    }
+
+    match /usernames/{name} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && name.matches('^[a-z0-9_]{3,20}$');
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /videos/{videoId}/reviews/{uid} {
+      allow read: if true;
+      allow create, update: if isUser(uid) && validEntry(uid);
+      allow delete: if isUser(uid);
+    }
+
+    // Anyone signed in can report a review; only you (in the Firebase console) can read reports.
+    match /reports/{id} {
+      allow create: if signedIn() && request.resource.data.reporterUid == request.auth.uid;
+    }
+  }
+}

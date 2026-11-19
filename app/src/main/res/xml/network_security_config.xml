@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Allows plain HTTP only to 10.0.2.2, which is "this computer" inside the Android emulator.
+     Used for testing against the local Firebase emulator. Everything else must use HTTPS. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

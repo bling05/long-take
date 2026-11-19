@@ -1,0 +1,29 @@
+.gradle/
+build/
+app/build/
+local.properties
+secrets.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+.kotlin/
+LongTake.apk
+
+# Built app files (they contain the keys from secrets.properties)
+*.apk
+*.aab
+
+# Signing key: never publish
+keystore/
+*.jks
+*.keystore
+
+# Firebase and emulator leftovers
+.firebase/
+*-debug.log
+
+# Personal working notes
+HANDOFF.md
+PLAY_STORE_PLAN.md
+SETUP.md
