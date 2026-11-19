@@ -1,22 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Long Take: a widescreen (2.39:1) film frame with a small amber "recording" dot. -->
+<!-- Long Take: a short stretch of a speaking voice, seven waveform bars. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- frame outline -->
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFEDE5D8"
-        android:strokeWidth="3.2"
-        android:pathData="M31,43.5 L77,43.5 Q79.5,43.5 79.5,46 L79.5,62 Q79.5,64.5 77,64.5 L31,64.5 Q28.5,64.5 28.5,62 L28.5,46 Q28.5,43.5 31,43.5 Z" />
-    <!-- the long take: one unbroken line running through the frame -->
-    <path
-        android:fillColor="#FFE6A55E"
-        android:pathData="M35,53 L66,53 Q67.2,53 67.2,54 Q67.2,55 66,55 L35,55 Q33.8,55 33.8,54 Q33.8,53 35,53 Z" />
-    <!-- recording dot -->
-    <path
-        android:fillColor="#FFE6A55E"
-        android:pathData="M73,54 m-2.6,0 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0" />
+        android:fillColor="#FF2A2420"
+        android:pathData="M28.46,50.42 a2.02,2.02 0 0,1 4.03,0 v7.17 a2.02,2.02 0 0,1 -4.03,0 z M36.3,43.7 a2.02,2.02 0 0,1 4.03,0 v20.61 a2.02,2.02 0 0,1 -4.03,0 z M44.14,48.18 a2.02,2.02 0 0,1 4.03,0 v11.65 a2.02,2.02 0 0,1 -4.03,0 z M51.98,36.98 a2.02,2.02 0 0,1 4.03,0 v34.05 a2.02,2.02 0 0,1 -4.03,0 z M59.82,45.94 a2.02,2.02 0 0,1 4.03,0 v16.13 a2.02,2.02 0 0,1 -4.03,0 z M67.66,38.66 a2.02,2.02 0 0,1 4.03,0 v30.69 a2.02,2.02 0 0,1 -4.03,0 z M75.5,50.42 a2.02,2.02 0 0,1 4.03,0 v7.17 a2.02,2.02 0 0,1 -4.03,0 z" />
 </vector>
