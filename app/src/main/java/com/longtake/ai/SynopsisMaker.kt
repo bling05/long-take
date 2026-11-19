@@ -46,7 +46,7 @@ class SynopsisMaker(
             if (settings.now().anthropicApiKey.isBlank()) return@launch
             _status.value = Status(writing = true)
             var failuresInARow = 0
-            for (id in db.synopses().missingForFeed()) {
+            for (id in db.synopses().missing()) {
                 // Read the key each time, so removing it in Settings stops the run straight away.
                 val key = settings.now().anthropicApiKey
                 if (key.isBlank()) break
@@ -99,7 +99,7 @@ class SynopsisMaker(
         val r = writer.write(key, video.title, video.channelTitle, video.description, transcript)
         if (r.synopsis.isBlank()) return true
         // The mood is stored alongside the subjects, so the Discover pills can treat it the same way.
-        val topics = r.topics + r.mood.tag
+        val topics = r.topics + r.mood.tag + Topics.REVISION_TAG
         val synopsis = SynopsisEntity(id, r.synopsis, topics.joinToString("|"))
         db.synopses().upsert(synopsis)
         runCatching { social.shareSynopsis(synopsis) }

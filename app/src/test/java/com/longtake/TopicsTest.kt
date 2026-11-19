@@ -40,7 +40,7 @@ class TopicsTest {
     @Test fun moodAloneLeavesSubjectsToKeywords() {
         val item = video("Why these games feel lonely", SynopsisEntity("x", "…", "mood:neutral"))
         assertEquals(listOf("Games"), topicsOf(item))
-        assertEquals(true, item.synopsis!!.isCurrent)
-        assertEquals(false, SynopsisEntity("x", "…", "Games").isCurrent)
+        assertEquals(false, item.synopsis!!.isCurrent)
+        assertEquals(true, SynopsisEntity("x", "…", "Games|mood:light|${Topics.REVISION_TAG}").isCurrent)
     }
 }

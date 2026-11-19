@@ -2,7 +2,7 @@
 
 ### [long-take.web.app](https://long-take.web.app): my video essay recommendations
 
-A small Android app I made for finding and discussing YouTube video essays, for my own enjoyment. Everything I rate in it shows up on the site above.
+A small Android app I made for finding and discussing YouTube video essays and stories, for my own enjoyment. Everything I rate in it shows up on the site above.
 
 **[Download the app (APK)](https://github.com/bling05/long-take/releases/latest/download/LongTake.apk)** for Android 8.0 or newer. Your phone will ask you to allow installing apps from your browser or files app.
 

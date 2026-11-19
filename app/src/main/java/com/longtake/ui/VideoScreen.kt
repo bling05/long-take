@@ -204,37 +204,6 @@ fun VideoScreen(repo: Repository, videoId: String, onBack: () -> Unit, onOpenPro
                 socialMsg?.let { m -> Text(m, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             }
 
-            // Essay score
-            Spacer(Modifier.height(16.dp))
-            val essay = it.essay()
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Essay score", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        EssayChip(essay)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        if (essay.reasons.isEmpty()) "No strong signals either way." else essay.reasons.joinToString(". "),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    val sp = if (Features.AI_CHECK) it.ai?.speech() else null
-                    if (sp != null) {
-                        Text(
-                            "${"%.1f".format(sp.fillerPer1k)} filler words per 1,000 · ${sp.wordsPerMinute} words per minute",
-                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    } else if (Features.AI_CHECK && it.ai == null) {
-                        Text(
-                            "Gets more accurate once the AI check has read the transcript.",
-                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                }
-            }
-
             if (Features.AI_CHECK) {
                 Spacer(Modifier.height(12.dp))
                 Card(Modifier.fillMaxWidth()) {

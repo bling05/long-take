@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -43,8 +44,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -58,7 +62,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.longtake.Features
-import com.longtake.ai.EssayScore
 import com.longtake.data.AiCheckEntity
 import com.longtake.data.Verdict
 import com.longtake.data.VideoWithState
@@ -138,7 +141,6 @@ fun VideoCard(
     onToggleWatched: () -> Unit,
 ) {
     val v = item.video
-    val essay = item.essay()
     val watched = item.user?.watched == true
     Column(
         Modifier
@@ -195,20 +197,26 @@ fun VideoCard(
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
                 item.synopsis?.let { s ->
+                    // Tap to read the whole synopsis without leaving the list.
+                    var expanded by rememberSaveable(v.id) { mutableStateOf(false) }
                     Text(
                         s.text,
                         style = MaterialTheme.typography.bodySmall,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp),
+                        maxLines = if (expanded) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .animateContentSize()
+                            .clickable(onClickLabel = if (expanded) "Show less" else "Show the whole synopsis") { expanded = !expanded },
                     )
                 }
-                Row(Modifier.padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (Features.AI_CHECK) AiChip(item.ai, checking)
-                    EssayChip(essay)
-                    val rating = item.user?.rating ?: 0
-                    if (rating > 0) {
-                        Icon(Icons.Filled.Star, null, tint = Color(0xFFF2A900), modifier = Modifier.size(14.dp))
-                        Text("$rating", style = MaterialTheme.typography.labelSmall)
+                val rating = item.user?.rating ?: 0
+                if (Features.AI_CHECK || rating > 0) {
+                    Row(Modifier.padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (Features.AI_CHECK) AiChip(item.ai, checking)
+                        if (rating > 0) {
+                            Icon(Icons.Filled.Star, null, tint = Color(0xFFF2A900), modifier = Modifier.size(14.dp))
+                            Text("$rating", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }
@@ -239,6 +247,8 @@ fun VideoList(
     onToggleSave: (VideoWithState) -> Unit,
     onToggleWatched: (VideoWithState) -> Unit,
     header: (@Composable () -> Unit)? = null,
+    /** Optional extra content shown under each card, e.g. your review in the Library. */
+    below: (@Composable (VideoWithState) -> Unit)? = null,
     empty: @Composable () -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -246,9 +256,18 @@ fun VideoList(
     val showScrollUp by remember { derivedStateOf { listState.firstVisibleItemIndex > 4 } }
 
     Box(Modifier.fillMaxSize()) {
+        // While the list is still loading (empty), show the empty state outside the LazyColumn: a
+        // LazyColumn measured with no items resets its scroll position, so coming back from a video
+        // would jump to the top.
+        if (items.isEmpty()) {
+            Column(Modifier.fillMaxSize()) {
+                header?.invoke()
+                empty()
+            }
+            return@Box
+        }
         LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 24.dp)) {
             if (header != null) item { header() }
-            if (items.isEmpty()) item { empty() }
             items(items, key = { it.video.id }) { item ->
                 VideoCard(
                     item, item.video.id in checking,
@@ -256,6 +275,7 @@ fun VideoList(
                     onToggleSave = { onToggleSave(item) },
                     onToggleWatched = { onToggleWatched(item) },
                 )
+                below?.invoke(item)
             }
         }
         AnimatedVisibility(
@@ -303,19 +323,4 @@ fun StatusBanner(text: String, isError: Boolean, onDismiss: (() -> Unit)? = null
             color = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
         )
     }
-}
-
-@Composable
-fun EssayChip(e: EssayScore.Result, modifier: Modifier = Modifier) {
-    val label = if (e.format == EssayScore.Format.ESSAY) "Essay ${e.score}" else "${e.format.label} · ${e.score}"
-    Text(
-        label,
-        fontSize = 11.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1, overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-    )
 }

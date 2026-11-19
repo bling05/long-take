@@ -185,14 +185,21 @@ interface SynopsisDao {
     @Query("SELECT * FROM synopses WHERE videoId = :id")
     suspend fun get(id: String): SynopsisEntity?
 
-    /** Feed videos without an up-to-date synopsis (one with a mood), most viewed first. */
-    @Query("SELECT id FROM videos WHERE fromSource = 1 AND id NOT IN (SELECT videoId FROM synopses WHERE topics LIKE '%mood:%') ORDER BY views DESC")
-    suspend fun missingForFeed(): List<String>
+    /**
+     * Videos without an up-to-date synopsis (see [Topics.REVISION_TAG]): the ones you've saved, rated or
+     * watched first (including videos added by link), then the feed, most viewed first.
+     */
+    @Query(
+        "SELECT id FROM videos WHERE (fromSource = 1 OR id IN (SELECT videoId FROM user_videos)) " +
+            "AND id NOT IN (SELECT videoId FROM synopses WHERE topics LIKE '%" + Topics.REVISION_TAG + "%') " +
+            "ORDER BY id IN (SELECT videoId FROM user_videos) DESC, views DESC"
+    )
+    suspend fun missing(): List<String>
 
     @Query("SELECT COUNT(*) FROM videos WHERE fromSource = 1")
     fun feedCount(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM synopses WHERE topics LIKE '%mood:%' AND videoId IN (SELECT id FROM videos WHERE fromSource = 1)")
+    @Query("SELECT COUNT(*) FROM synopses WHERE topics LIKE '%" + Topics.REVISION_TAG + "%' AND videoId IN (SELECT id FROM videos WHERE fromSource = 1)")
     fun feedDoneCount(): Flow<Int>
 }
 

@@ -53,9 +53,10 @@ class SynopsisWriter {
         is not about games).
 
         Finally, rate the video's mood, for someone choosing what to put on:
-        - light: the video itself is played for laughs or fun: a roast, a joke theory, a silly or bizarre
-          story, a run of famous blunders, an underdog story told for fun. A fun subject alone isn't
-          enough: a straight analysis, history or review of a cartoon, game or film is neutral.
+        - light: the video is played for laughs, or it's a fun story at heart: a roast, a joke theory, a
+          silly or bizarre story, a run of famous blunders, an unlikely underdog win, even when told
+          straight. A fun subject alone isn't enough: a straight analysis, history or review of a
+          cartoon, game or film is neutral.
         - heavy: centred on real death, abuse, cruelty or crime, or built around dread, despair or mortality.
         - neutral: everything else, which is most videos: analysis, history, explainers, reviews and
           internet mysteries, including ones about dark or grim fiction.

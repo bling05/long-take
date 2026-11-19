@@ -17,11 +17,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.longtake.data.Repository
 import kotlinx.coroutines.launch
+
+/** Your review, small and in quotes under its video. */
+@Composable
+private fun ReviewQuote(text: String) {
+    Text(
+        "“$text”",
+        style = MaterialTheme.typography.bodySmall,
+        fontStyle = FontStyle.Italic,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 4,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +72,7 @@ fun LibraryScreen(repo: Repository, onOpen: (String) -> Unit) {
                         )
                     }
                 } else null,
+                below = if (tab == 2) { item -> item.user?.note?.trim()?.takeIf { it.isNotEmpty() }?.let { ReviewQuote(it) } } else null,
                 empty = {
                     when (tab) {
                         0 -> EmptyMessage("Nothing saved yet", "Tap the bookmark on any video to save it for later.")

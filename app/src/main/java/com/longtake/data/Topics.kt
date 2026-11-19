@@ -19,9 +19,15 @@ object Topics {
     )
 
     /**
-     * How heavy a video is to watch, judged by Claude along with the synopsis and stored with the
-     * topics as "mood:light" and so on. Synopses without a mood predate it and get rewritten.
+     * Synopses written with older instructions get rewritten. Bump this when the instructions change;
+     * it's stored with the topics as "rev:N".
      */
+    const val REVISION_TAG = "rev:2"
+
+    /** Tags like "mood:light" and "rev:2" sit alongside the topic labels; labels never contain ':'. */
+    fun isTag(s: String) = ':' in s
+
+    /** How heavy a video is to watch, judged by Claude along with the synopsis and stored as "mood:light" and so on. */
     enum class Mood {
         LIGHT, NEUTRAL, HEAVY;
 
@@ -29,7 +35,6 @@ object Topics {
 
         companion object {
             fun parse(s: String) = entries.firstOrNull { it.name.equals(s, ignoreCase = true) } ?: NEUTRAL
-            fun isTag(s: String) = s.startsWith("mood:")
         }
     }
 
@@ -47,7 +52,7 @@ object Topics {
     fun matches(t: Topic, item: VideoWithState): Boolean {
         val picked = item.synopsisTopics
         if (t == LIGHTHEARTED) return Mood.LIGHT.tag in picked
-        val subjects = picked.filterNot(Mood::isTag)
+        val subjects = picked.filterNot(::isTag)
         if (subjects.isNotEmpty()) return t.label in subjects
         val v = item.video
         if (v.categoryId in t.categoryIds) return true

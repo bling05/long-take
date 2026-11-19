@@ -263,7 +263,9 @@ class Repository(
         val cur = db.userVideos().get(id) ?: UserVideoEntity(videoId = id)
         val now = System.currentTimeMillis()
         var next = f(cur).copy(updatedAt = now)
-        if (next.rating != cur.rating || next.note != cur.note || next.reviewPublic != cur.reviewPublic) next = next.copy(reviewedAt = now)
+        // Reviews are ordered by reviewedAt: only a first review or a new star count moves one up, not editing the note.
+        val firstReview = cur.rating == 0 && cur.note.isBlank() && (next.rating > 0 || next.note.isNotBlank())
+        if (firstReview || (next.rating != cur.rating && next.rating > 0)) next = next.copy(reviewedAt = now)
         db.userVideos().upsert(next)
         scope.launch { runCatching { social.push(id) } }
     }

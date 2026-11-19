@@ -106,7 +106,7 @@ data class UserVideoEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     /** Share the note publicly as a review on your profile. */
     val reviewPublic: Boolean = false,
-    /** When the rating or review last changed (saving or marking watched doesn't count): orders reviews. */
+    /** When the video was first reviewed or its stars last changed (editing the note doesn't count): orders reviews. */
     @ColumnInfo(defaultValue = "0") val reviewedAt: Long = 0,
 )
 
@@ -161,6 +161,6 @@ data class SynopsisEntity(
     val topics: String,
     val createdAt: Long = System.currentTimeMillis(),
 ) {
-    /** Written with the current instructions; older synopses (without a mood) get rewritten. */
-    val isCurrent: Boolean get() = topics.split('|').any(Topics.Mood::isTag)
+    /** Written with the current instructions; older synopses get rewritten. */
+    val isCurrent: Boolean get() = Topics.REVISION_TAG in topics.split('|')
 }
