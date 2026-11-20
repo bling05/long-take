@@ -72,7 +72,8 @@ service cloud.firestore {
       allow write: if isUser("P2mzQNCtGRYQVUX4Z5DFPg9lb322")
         && request.resource.data.text is string && request.resource.data.text.size() <= 400
         && request.resource.data.topics is string && request.resource.data.topics.size() <= 200
-        && request.resource.data.createdAt is int;
+        && request.resource.data.createdAt is int
+        && (!("tags" in request.resource.data) || (request.resource.data.tags is string && request.resource.data.tags.size() <= 600));
     }
 
     // Anyone signed in can report a review; only you (in the Firebase console) can read reports.

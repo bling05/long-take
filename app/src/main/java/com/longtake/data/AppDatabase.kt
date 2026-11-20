@@ -196,6 +196,16 @@ interface SynopsisDao {
     )
     suspend fun missing(): List<String>
 
+    /** Every stored tag string, for building the shared tag list ([com.longtake.data.Tags]). */
+    @Query("SELECT tags FROM synopses WHERE tags != ''")
+    suspend fun allTags(): List<String>
+
+    @Query("SELECT * FROM synopses WHERE tags != ''")
+    suspend fun tagged(): List<SynopsisEntity>
+
+    @Query("SELECT COUNT(*) FROM synopses WHERE createdAt > :since AND tags != ''")
+    suspend fun taggedSince(since: Long): Int
+
     @Query("SELECT COUNT(*) FROM videos WHERE fromSource = 1")
     fun feedCount(): Flow<Int>
 
@@ -209,7 +219,7 @@ interface SynopsisDao {
         AiCheckEntity::class, UserVideoEntity::class, WatchHistoryEntity::class, SectionVideoEntity::class,
         SynopsisEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -225,7 +235,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "longtake.db")
-                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .fallbackToDestructiveMigration()
                 .build()
     }
@@ -250,5 +260,12 @@ val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
     override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE `user_videos` ADD COLUMN `reviewedAt` INTEGER NOT NULL DEFAULT 0")
         db.execSQL("UPDATE `user_videos` SET `reviewedAt` = `updatedAt` WHERE `rating` > 0 OR `note` != ''")
+    }
+}
+
+/** Adds the hidden recommendation tags to synopses. */
+val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+    override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `synopses` ADD COLUMN `tags` TEXT NOT NULL DEFAULT ''")
     }
 }

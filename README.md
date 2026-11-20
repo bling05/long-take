@@ -15,6 +15,7 @@ A small Android app I made for finding and discussing YouTube video essays and s
 
 - **Discover**: long-form essays from hand-picked channels and curated playlists (including a "YouTube Recs" list and every Jacob Geller video), with topic filters (including a "Lighthearted" one for fun, feel-good stories) and an "essay score" that sets apart essays from other long videos.
 - **Synopses**: a one-sentence summary under every video, written by Claude from the transcript. Each video is summarised once and shared with everyone using the app.
+- **For you**: once you've rated three videos, a "For you" pill on Discover ranks videos by how much they resemble the ones you rated. Along with each synopsis, Claude gives the video hidden tags (its style, plus specific ones like "liminal spaces" or "speedrun", reusing tags already in use); the app compares those, the creator, topic and mood, counting rare tags for more. At most two videos per creator.
 - **Sorting**: most viewed, newest, longest, or "hidden gems" (videos that did unusually well for the size of their channel), plus a strictness slider for how essay-like a video has to be.
 - **Your own sources**: add any YouTube channel or playlist by link or @handle, and its long videos join your feed. Paste a single video link to rate something that isn't listed.
 - **Search**: long videos only, so results skip Shorts and clips.
@@ -50,4 +51,10 @@ The app ships with a starter catalog (`app/src/main/assets/catalog.json`) so new
 
 ```
 SNAPSHOT=1 ./gradlew testDebugUnitTest --tests com.longtake.SnapshotTool
+```
+
+To check the "For you" ranking against your own ratings (hides each 4- or 5-star rating in turn and reports where that video lands, using the bundled catalog):
+
+```
+RECS=1 ./gradlew testDebugUnitTest --tests com.longtake.RecommenderCheck
 ```

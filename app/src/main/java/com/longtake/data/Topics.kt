@@ -22,7 +22,7 @@ object Topics {
      * Synopses without this tag get rewritten. Bump it when a change to the instructions is worth
      * redoing existing synopses for; it's stored with the topics as "rev:N".
      */
-    const val REVISION_TAG = "rev:2"
+    const val REVISION_TAG = "rev:3"
 
     /** Tags like "mood:light" and "rev:2" sit alongside the topic labels; labels never contain ':'. */
     fun isTag(s: String) = ':' in s
@@ -44,6 +44,7 @@ object Topics {
     /** Channels whose videos always count as lighthearted, whatever Claude says. */
     private val lightChannels = setOf(
         "UCtUbO6rBht0daVIOGML3c8w", // Summoning Salt
+        "UC5UYMeKfZbFYnLHzoTJB1xA", // Schaffrillas Productions
     )
 
     /** Everything shown as a Discover pill: the mood first, then the subjects. */

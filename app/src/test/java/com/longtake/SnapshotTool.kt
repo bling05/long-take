@@ -83,6 +83,7 @@ class SnapshotTool {
                     text = f.getJSONObject("text").getString("stringValue"),
                     topics = f.getJSONObject("topics").getString("stringValue"),
                     createdAt = f.getJSONObject("createdAt").getString("integerValue").toLong(),
+                    tags = f.optJSONObject("tags")?.optString("stringValue").orEmpty(),
                 )
             }
             token = j.optString("nextPageToken")

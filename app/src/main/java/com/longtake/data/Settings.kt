@@ -68,6 +68,8 @@ class SettingsStore(private val context: Context) {
         val strictness = stringPreferencesKey("essay_strictness")
         val theme = stringPreferencesKey("theme")
         val synopsisSync = longPreferencesKey("synopsis_synced_until")
+        // A new key name makes every phone tidy again (after a change to how tidying works).
+        val tagsTidied = longPreferencesKey("tags_tidied_at_3")
     }
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -106,6 +108,10 @@ class SettingsStore(private val context: Context) {
     /** Newest shared synopsis already copied to this phone. */
     suspend fun synopsisSyncedUntil(): Long = context.dataStore.data.first()[K.synopsisSync] ?: 0
     suspend fun setSynopsisSyncedUntil(v: Long) = context.dataStore.edit { it[K.synopsisSync] = v }
+
+    /** When duplicate recommendation tags were last merged (see SynopsisMaker). */
+    suspend fun tagsTidiedAt(): Long = context.dataStore.data.first()[K.tagsTidied] ?: 0
+    suspend fun setTagsTidiedAt(v: Long) = context.dataStore.edit { it[K.tagsTidied] = v }
     suspend fun setSeeded(v: Boolean) = context.dataStore.edit { it[K.seeded] = v }
     suspend fun setSeedsVersion(v: Int) = context.dataStore.edit { it[K.seedsVersion] = v }
 }

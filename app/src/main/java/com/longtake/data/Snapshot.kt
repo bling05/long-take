@@ -25,7 +25,7 @@ data class Snapshot(
         .put("playlists", JSONArray(playlists.map { JSONObject().put("id", it.id).put("title", it.title).put("channelTitle", it.channelTitle) }))
         .put("videos", JSONArray(videos.map { it.toJson() }))
         .put("sections", JSONObject(sections.mapValues { JSONArray(it.value) }))
-        .put("synopses", JSONArray(synopses.map { JSONObject().put("videoId", it.videoId).put("text", it.text).put("topics", it.topics).put("createdAt", it.createdAt) }))
+        .put("synopses", JSONArray(synopses.map { JSONObject().put("videoId", it.videoId).put("text", it.text).put("topics", it.topics).put("createdAt", it.createdAt).put("tags", it.tags) }))
         .toString()
 
     companion object {
@@ -42,7 +42,7 @@ data class Snapshot(
                 videos = j.getJSONArray("videos").objects().map { it.toVideo() },
                 sections = sections.keys().asSequence().associateWith { k -> sections.getJSONArray(k).strings() },
                 synopses = j.getJSONArray("synopses").objects().map {
-                    SynopsisEntity(it.getString("videoId"), it.getString("text"), it.getString("topics"), it.getLong("createdAt"))
+                    SynopsisEntity(it.getString("videoId"), it.getString("text"), it.getString("topics"), it.getLong("createdAt"), it.optString("tags"))
                 },
             )
         }

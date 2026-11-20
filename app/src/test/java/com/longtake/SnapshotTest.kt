@@ -19,7 +19,7 @@ class SnapshotTest {
         val snap = Snapshot(
             createdAt = 1, seedsVersion = 2, channels = listOf(channel), playlists = listOf(PlaylistEntity("PL1", "Best essays", "Someone", addedAt = 0)),
             videos = listOf(video), sections = mapOf("jacob_geller" to listOf("v1")),
-            synopses = listOf(SynopsisEntity("v1", "Cold as a threat.", "History|mood:heavy|rev:2", 9)),
+            synopses = listOf(SynopsisEntity("v1", "Cold as a threat.", "History|mood:heavy|rev:3", 9, tags = "style:personal|arctic|exploration")),
         )
         val back = Snapshot.fromJson(snap.toJson())
 

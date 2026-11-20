@@ -37,10 +37,12 @@ class TopicsTest {
         assertEquals(false, Topics.matches(pill, video("Fear of Cold", SynopsisEntity("x", "…", "History|mood:heavy"))))
     }
 
-    @Test fun summoningSaltIsAlwaysLight() {
+    @Test fun lightChannelsAreAlwaysLight() {
         val v = video("The History of Super Mario Bros. World Records")
         val salt = v.copy(video = v.video.copy(channelId = "UCtUbO6rBht0daVIOGML3c8w"))
         assertEquals(true, Topics.matches(Topics.LIGHTHEARTED, salt))
+        val schaff = v.copy(video = v.video.copy(title = "Why Ratatouille is Pixar's Magnum Opus", channelId = "UC5UYMeKfZbFYnLHzoTJB1xA"))
+        assertEquals(true, Topics.matches(Topics.LIGHTHEARTED, schaff.copy(synopsis = SynopsisEntity("x", "…", "Film & TV|mood:neutral|rev:2"))))
     }
 
     @Test fun moodAloneLeavesSubjectsToKeywords() {

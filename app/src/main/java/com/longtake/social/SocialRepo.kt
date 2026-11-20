@@ -326,7 +326,7 @@ class SocialRepo(private val context: Context, private val db: AppDatabase) {
             .orderBy("createdAt").get().await().documents
         return docs.mapNotNull { d ->
             val text = d.getString("text") ?: return@mapNotNull null
-            SynopsisEntity(d.id, text, d.getString("topics").orEmpty(), d.getLong("createdAt") ?: 0)
+            SynopsisEntity(d.id, text, d.getString("topics").orEmpty(), d.getLong("createdAt") ?: 0, d.getString("tags").orEmpty())
         }
     }
 
@@ -334,7 +334,7 @@ class SocialRepo(private val context: Context, private val db: AppDatabase) {
     suspend fun shareSynopsis(s: SynopsisEntity) {
         if (uid != SYNOPSIS_WRITER_UID) return
         store().collection("synopses").document(s.videoId)
-            .set(mapOf("text" to s.text, "topics" to s.topics, "createdAt" to s.createdAt)).await()
+            .set(mapOf("text" to s.text, "topics" to s.topics, "createdAt" to s.createdAt, "tags" to s.tags)).await()
     }
 
     /** Push one video's rating/review (public) and saved/watched/note (private backup). */

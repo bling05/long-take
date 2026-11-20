@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.longtake.Features
 import com.longtake.ai.EssayScore
+import com.longtake.data.Recommender
 import com.longtake.data.Repository
 import com.longtake.data.Sections
 import com.longtake.data.Topics
@@ -57,6 +58,8 @@ fun DiscoverScreen(repo: Repository, onOpen: (String) -> Unit) {
     val settings by repo.settings.flow.collectAsStateWithLifecycle(initialValue = null)
     val feed by repo.db.videos().feed().collectAsStateWithLifecycle(initialValue = emptyList())
     val sectionRows by repo.db.sections().all().collectAsStateWithLifecycle(initialValue = emptyList())
+    val reviewed by repo.db.videos().ratedOrNoted().collectAsStateWithLifecycle(initialValue = emptyList())
+    val showForYou = reviewed.count { (it.user?.rating ?: 0) > 0 } >= Recommender.MIN_RATINGS
     val sectionIds = remember(sectionRows) { sectionRows.groupBy({ it.section }, { it.videoId }).mapValues { it.value.toSet() } }
     val status by repo.status.collectAsStateWithLifecycle()
     val checking by repo.checking.collectAsStateWithLifecycle()
@@ -68,10 +71,13 @@ fun DiscoverScreen(repo: Repository, onOpen: (String) -> Unit) {
     LaunchedEffect(Unit) { repo.refreshIfStale() }
 
     val s = settings
-    val shown = remember(feed, s, sort, topic, sectionIds) {
+    val shown = remember(feed, s, sort, topic, sectionIds, reviewed) {
         if (s == null) emptyList() else {
             val section = Sections.all.firstOrNull { it.label == topic }
-            if (section != null) {
+            if (topic == FOR_YOU) {
+                // Ranked by likeness to your ratings, so the sort order doesn't apply.
+                Recommender.recommend(applyFilters(feed, s, hideWatched = true), reviewed)
+            } else if (section != null) {
                 val ids = sectionIds[section.key].orEmpty()
                 sortVideos(applySectionFilters(feed.filter { it.video.id in ids }, s), sort)
             } else {
@@ -107,6 +113,7 @@ fun DiscoverScreen(repo: Repository, onOpen: (String) -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 TopicPill("All", topic == null) { topic = null }
+                if (showForYou) TopicPill(FOR_YOU, topic == FOR_YOU) { topic = if (topic == FOR_YOU) null else FOR_YOU }
                 Sections.all.forEach { sec -> TopicPill(sec.label, topic == sec.label) { topic = if (topic == sec.label) null else sec.label } }
                 Topics.pills.forEach { t -> TopicPill(t.label, topic == t.label) { topic = if (topic == t.label) null else t.label } }
             }
@@ -114,7 +121,7 @@ fun DiscoverScreen(repo: Repository, onOpen: (String) -> Unit) {
                 Text(
                     listOfNotNull(
                         "${shown.size} essays",
-                        sort.label.lowercase(),
+                        if (topic == FOR_YOU) "picked from your ratings" else sort.label.lowercase(),
                         s.strictness.label.lowercase(),
                         s.lastRefreshAt.takeIf { it > 0 }?.let { "updated ${formatAge(it)}" },
                     ).joinToString("  ·  "),
@@ -161,6 +168,9 @@ fun DiscoverScreen(repo: Repository, onOpen: (String) -> Unit) {
         }
     }
 }
+
+/** The pill that ranks videos by your ratings ([Recommender]). */
+private const val FOR_YOU = "For you"
 
 /** Soft, borderless pill used for topics and sort options. */
 @Composable

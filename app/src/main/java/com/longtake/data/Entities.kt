@@ -152,7 +152,7 @@ data class SectionVideoEntity(
     val videoId: String,
 )
 
-/** A short "what it's about" written by Claude, plus the Discover topics it picked. Shared through Firestore. */
+/** A short "what it's about" written by Claude, plus the Discover topics and hidden tags it picked. Shared through Firestore. */
 @Entity(tableName = "synopses")
 data class SynopsisEntity(
     @PrimaryKey val videoId: String,
@@ -160,6 +160,8 @@ data class SynopsisEntity(
     /** Topic labels from [Topics.all] plus a mood tag ([Topics.Mood]), separated by "|". */
     val topics: String,
     val createdAt: Long = System.currentTimeMillis(),
+    /** Hidden tags for recommendations ([Tags]), separated by "|". */
+    @ColumnInfo(defaultValue = "") val tags: String = "",
 ) {
     /** Written with the current instructions; older synopses get rewritten. */
     val isCurrent: Boolean get() = Topics.REVISION_TAG in topics.split('|')
