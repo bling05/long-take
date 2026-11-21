@@ -72,6 +72,12 @@
   .more:hover { color: var(--ink); text-decoration-color: var(--accent); }
   footer { margin-top: 56px; color: var(--soft); font-size: 15px; }
   footer p { max-width: 36em; }
+  /* My handwritten initials, drawn in the ink colour (the image is only used as a shape). */
+  .signature {
+    display: block; width: 116px; aspect-ratio: 516 / 250; margin-top: 18px;
+    background: var(--ink); transform: rotate(-4deg);
+    -webkit-mask: url(signature.png) no-repeat center / contain; mask: url(signature.png) no-repeat center / contain;
+  }
 
   @media (max-width: 560px) {
     body { font-size: 18px; }
@@ -92,6 +98,7 @@
   <button type="button" id="more" class="more" hidden>more →</button>
   <footer>
     <p>Logged with Long Take, a small Android app I made for finding and discussing video essays and stories for my own enjoyment.</p>
+    <span class="signature" role="img" aria-label="BL"></span>
   </footer>
 </main>
 
