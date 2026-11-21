@@ -60,6 +60,11 @@
   .meta { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft); margin-top: 3px; }
   .stars { color: var(--accent); letter-spacing: 2px; font-size: 15px; margin-top: 6px; }
   .stars span { color: var(--faint); }
+  /* 5 stars are rare, so they get a quiet label. */
+  .stars .best {
+    margin-left: 8px; color: var(--accent); letter-spacing: 0.08em;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; text-transform: uppercase; vertical-align: 1px;
+  }
   .note { margin-top: 8px; font-style: italic; }
   .thumb img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--thumb-bg); border-radius: 2px; }
   .empty { color: var(--soft); font-style: italic; padding: 24px 0; }
@@ -184,7 +189,7 @@ function entryHtml(e) {
       <div class="body">
         <a class="title" href="${yt(v.videoId)}" target="_blank" rel="noopener">${esc(v.title)}</a>
         <div class="meta">${esc(v.channelTitle)}${v.durationSec ? " · " + mins(v.durationSec) : ""}</div>
-        <div class="stars" aria-label="${e.rating} out of 5">${stars(e.rating)}</div>
+        <div class="stars" aria-label="${e.rating} out of 5">${stars(e.rating)}${e.rating === 5 ? `<span class="best">masterpiece</span>` : ""}</div>
         ${note ? `<p class="note">${esc(note)}</p>` : ""}
       </div>
       <a class="thumb" href="${yt(v.videoId)}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"><img src="${esc(thumb(v.thumbnailUrl))}" alt="" loading="lazy"></a>
