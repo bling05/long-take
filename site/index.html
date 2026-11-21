@@ -87,7 +87,7 @@
 <body>
 <main class="page">
   <h1>branton's video essay recs</h1>
-  <p class="sort">sort: <button type="button" data-sort="recent">recent</button> · <button type="button" data-sort="stars">stars</button></p>
+  <p class="sort">sort: <button type="button" data-sort="stars">favorites</button> · <button type="button" data-sort="recent">recent</button></p>
   <div id="list"><p class="empty">Loading…</p></div>
   <button type="button" id="more" class="more" hidden>more →</button>
   <footer>
@@ -167,7 +167,7 @@ const PER_PAGE = Math.min(Math.max(Number(params.get("per")) || 20, 1), 50);
 const more = document.getElementById("more");
 const sortButtons = document.querySelectorAll(".sort button");
 let reader = null, shown = 0, uid = OWNER_UID;
-let sort = params.get("sort") === "stars" ? "stars" : "recent";
+let sort = params.get("sort") === "recent" ? "recent" : "stars";
 
 function entryHtml(e) {
   const v = e.video, d = new Date(e.updatedAt), note = (e.review || "").trim();
@@ -210,7 +210,7 @@ more.addEventListener("click", async () => {
   more.disabled = false;
 });
 
-// Starts the list over in the chosen order. The choice is kept in the address (?sort=stars) so it can be shared.
+// Starts the list over in the chosen order. Favorites is the default; recent is kept in the address (?sort=recent) so it can be shared.
 async function start() {
   sortButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sort === sort)));
   shown = 0; more.hidden = true;
@@ -228,7 +228,7 @@ sortButtons.forEach(b => b.addEventListener("click", () => {
   if (b.dataset.sort === sort) return;
   sort = b.dataset.sort;
   const url = new URL(location.href);
-  if (sort === "stars") url.searchParams.set("sort", "stars"); else url.searchParams.delete("sort");
+  if (sort === "recent") url.searchParams.set("sort", "recent"); else url.searchParams.delete("sort");
   history.replaceState(null, "", url);
   start();
 }));
