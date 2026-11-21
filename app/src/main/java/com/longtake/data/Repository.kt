@@ -266,7 +266,8 @@ class Repository(
 
     suspend fun search(query: String, order: YouTubeApi.Order): List<String> {
         val q = if (query.contains("essay", true)) query else "$query video essay"
-        val ids = youtube.searchVideos(q, order, max = 30)
+        // Any length: when you search for a video by name it should turn up, even a short one.
+        val ids = youtube.searchVideos(q, order, max = 30, longOnly = false)
         val known = db.videos().getVideos(ids).associateBy { it.id }
         val missing = ids.filter { it !in known }
         val vids = youtube.videos(missing, fromSource = false)

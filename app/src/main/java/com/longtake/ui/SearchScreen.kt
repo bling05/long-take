@@ -56,7 +56,9 @@ fun SearchScreen(repo: Repository, onOpen: (String) -> Unit) {
     val ordered = remember(results, ids, s) {
         val byId = results.associateBy { it.video.id }
         val list = ids.mapNotNull { byId[it] }
-        if (s == null) list else applyFilters(list, s, hideWatched = false)
+        // You searched for these, so the minimum length and essay strictness don't hide any; only
+        // Shorts, blocked channels and your AI settings do.
+        if (s == null) list else applySearchFilters(list, s)
     }
 
     fun run() {
@@ -89,7 +91,7 @@ fun SearchScreen(repo: Repository, onOpen: (String) -> Unit) {
                 }
             }
             Text(
-                "Searches long (20+ min) videos only. Each search uses about 1% of YouTube's free daily limit.",
+                "Shorts are left out. Each search uses about 1% of YouTube's free daily limit.",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),

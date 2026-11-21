@@ -120,11 +120,15 @@ class YouTubeApi(
     enum class Order(val api: String) { RELEVANCE("relevance"), VIEWS("viewCount"), DATE("date") }
 
     /** 100 quota units. Returns video IDs of long (20+ min) videos. */
-    suspend fun searchVideos(query: String, order: Order = Order.RELEVANCE, channelId: String? = null, max: Int = 25): List<String> {
+    /** [longOnly] asks YouTube for videos over 20 minutes only. */
+    suspend fun searchVideos(
+        query: String, order: Order = Order.RELEVANCE, channelId: String? = null, max: Int = 25, longOnly: Boolean = true,
+    ): List<String> {
         val params = mutableMapOf(
-            "part" to "id", "type" to "video", "videoDuration" to "long",
+            "part" to "id", "type" to "video",
             "order" to order.api, "maxResults" to max.toString(), "relevanceLanguage" to "en",
         )
+        if (longOnly) params["videoDuration"] = "long"
         if (query.isNotBlank()) params["q"] = query
         channelId?.let { params["channelId"] = it }
         val j = get("search", params)

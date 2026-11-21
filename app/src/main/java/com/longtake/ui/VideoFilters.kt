@@ -46,6 +46,10 @@ fun applySectionFilters(list: List<VideoWithState>, s: AppSettings): List<VideoW
         }
     }
 
+/** Search results: like [applySectionFilters], but watched videos stay so you can find them again. */
+fun applySearchFilters(list: List<VideoWithState>, s: AppSettings): List<VideoWithState> =
+    applySectionFilters(list, s.copy(hideWatched = false))
+
 fun sortVideos(list: List<VideoWithState>, sort: SortBy): List<VideoWithState> = when (sort) {
     SortBy.MOST_VIEWED -> list.sortedByDescending { it.video.views }
     SortBy.NEWEST -> list.sortedByDescending { it.video.publishedAt }
