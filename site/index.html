@@ -144,8 +144,8 @@ async function getDoc(path) {
   return fields((await r.json()).fields || {});
 }
 // Reads ratings a batch at a time, so each visit only reads what's shown.
-// "recent": newest first. "stars": most stars first, and among equal stars the earliest first.
-const ORDER = { recent: "updatedAt desc", stars: "rating desc,updatedAt asc" };
+// "recent": newest first. "stars": most stars first, and among equal stars the newest first.
+const ORDER = { recent: "updatedAt desc", stars: "rating desc,updatedAt desc" };
 function ratingReader(uid, sort) {
   let token = "", done = false;
   return {
