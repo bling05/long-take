@@ -60,15 +60,13 @@
   .meta { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft); margin-top: 3px; }
   .stars { color: var(--accent); letter-spacing: 2px; font-size: 15px; margin-top: 6px; }
   .stars span { color: var(--faint); }
-  /* 5 stars are rare, so now and then a soft glint passes over them. */
+  /* 5 stars are rare, so they're gilded: a warm gold sheen on each star and a soft glow. */
   .stars.five {
     display: inline-block; color: transparent;
-    background: linear-gradient(100deg, var(--accent) 42%, #f6dca6 50%, var(--accent) 58%) 100% 0 / 300% 100%;
+    background: linear-gradient(180deg, #e9bf6a 15%, #c27a2c 55%, var(--accent) 90%);
     -webkit-background-clip: text; background-clip: text;
-    animation: glint 7s ease-in-out infinite;
+    filter: drop-shadow(0 0 3px rgba(233, 180, 90, 0.45));
   }
-  @keyframes glint { 0%, 75% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-  @media (prefers-reduced-motion: reduce) { .stars.five { animation: none; color: var(--accent); background: none; } }
   .note { margin-top: 8px; font-style: italic; }
   .thumb img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--thumb-bg); border-radius: 2px; }
   .empty { color: var(--soft); font-style: italic; padding: 24px 0; }
