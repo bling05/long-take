@@ -13,12 +13,11 @@ A small Android app I made for finding and discussing YouTube video essays and s
 
 ## What it does
 
-- **Discover**: long-form essays from hand-picked channels and curated playlists (including a "YouTube Recs" list and every Jacob Geller video), with topic filters (including a "Lighthearted" one for fun, feel-good stories) and an "essay score" that sets apart essays from other long videos.
-- **Synopses**: a one-sentence summary under every video, written by Claude from the transcript. Each video is summarised once and shared with everyone using the app.
-- **For you**: once you've rated three videos, a "For you" pill on Discover ranks videos by how much they resemble the ones you rated. Along with each synopsis, Claude gives the video hidden tags (its style, plus specific ones like "liminal spaces" or "speedrun", reusing tags already in use); the app compares those, the creator, topic and mood, counting rare tags for more. At most two videos per creator.
-- **Sorting**: most viewed, newest, longest, or "hidden gems" (videos that did unusually well for the size of their channel), plus a strictness slider for how essay-like a video has to be.
+- **Discover**: long-form essays from hand-picked channels and curated playlists, with topic filters (including a "Lighthearted" one for lighter stories).
+- **Synopses**: a one-sentence summary under every video. Each video is summarised once and shared with everyone using the app.
+- **For you**: once you've rated three videos, a "For you" pill on Discover ranks videos by how much they resemble the ones you rated.
 - **Your own sources**: add any YouTube channel or playlist by link or @handle, and its long videos join your feed.
-- **Search**: finds videos of any length (Shorts left out), so a video you search for by name turns up even if it is short. The minimum-length and strictness settings only apply to Discover.
+- **Search**: finds videos of any length.
 - **Library**: saved videos, watch history (it can import your YouTube history from Google Takeout), and your ratings and notes.
 - **Profiles**: Letterboxd-style ratings and reviews, four favourite essays, following friends, and a feed of what they've rated. Notes stay private unless you share them as a review.
 - **Blocking**: hide a channel from everything with one tap, and unblock it any time from Settings.
