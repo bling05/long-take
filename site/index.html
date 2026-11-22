@@ -85,6 +85,8 @@
   .more:hover { color: var(--ink); text-decoration-color: var(--accent); }
   footer { margin-top: 56px; color: var(--soft); font-size: 15px; }
   footer p { max-width: 36em; }
+  footer a { text-decoration-color: var(--faint); text-underline-offset: 3px; }
+  footer a:hover { color: var(--ink); text-decoration-color: var(--accent); }
   /* My handwritten initials, drawn in the ink colour (the image is only used as a shape). */
   .signature {
     display: block; width: 128px; aspect-ratio: 751 / 387; margin-top: 18px;
@@ -114,7 +116,7 @@
     <button type="button" id="next" class="more">next →</button>
   </nav>
   <footer>
-    <p>Logged with Long Take, a small Android app I made for finding and discussing video essays and stories on YouTube. Please enjoy.</p>
+    <p>Logged with <a href="https://github.com/bling05/long-take" target="_blank" rel="noopener">Long Take</a>, a small Android app I made for finding and discussing video essays and stories on YouTube. Please enjoy.</p>
     <span class="signature" role="img" aria-label="BL"></span>
   </footer>
 </main>
