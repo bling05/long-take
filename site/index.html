@@ -53,6 +53,8 @@
     padding: 18px 0; border-top: 1px solid var(--rule); align-items: start;
   }
   .entry:last-child { border-bottom: 1px solid var(--rule); }
+  /* In the favorites order, a slightly heavier line where the star count changes. */
+  .entry.new-tier { border-top-width: 2px; }
   .date { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft); line-height: 1.2; padding-top: 4px; }
   .date b { display: block; font-weight: 500; font-size: 18px; color: var(--ink); }
   .title { font-size: 21px; line-height: 1.25; font-weight: 500; text-decoration: none; }
@@ -180,13 +182,15 @@ const monthLabel = d => d.toLocaleDateString("en-GB", { month: "short" }).toLowe
 const PER_PAGE = Math.min(Math.max(Number(params.get("per")) || 20, 1), 50);
 const more = document.getElementById("more");
 const sortButtons = document.querySelectorAll(".sort button");
-let reader = null, shown = 0, uid = OWNER_UID;
+let reader = null, shown = 0, lastRating = null, uid = OWNER_UID;
 let sort = params.get("sort") === "recent" ? "recent" : "stars";
 
 function entryHtml(e) {
   const v = e.video, d = new Date(e.updatedAt), note = (e.review || "").trim();
+  const newTier = sort === "stars" && lastRating !== null && e.rating !== lastRating;
+  lastRating = e.rating;
   return `
-    <article class="entry">
+    <article class="entry${newTier ? " new-tier" : ""}">
       <div class="date"><b>${d.getDate()}</b>${monthLabel(d)}</div>
       <div class="body">
         <a class="title" href="${yt(v.videoId)}" target="_blank" rel="noopener">${esc(v.title)}</a>
@@ -227,7 +231,7 @@ more.addEventListener("click", async () => {
 // Starts the list over in the chosen order. Favorites is the default; recent is kept in the address (?sort=recent) so it can be shared.
 async function start() {
   sortButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sort === sort)));
-  shown = 0; more.hidden = true;
+  shown = 0; lastRating = null; more.hidden = true;
   list.innerHTML = `<p class="empty">Loading…</p>`;
   reader = ratingReader(uid, sort);
   try {

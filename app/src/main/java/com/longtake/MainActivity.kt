@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
                         composable("you") {
                             YouScreen(repo, openRef, onOpenSources = { nav.navigate("sources") }, onOpenSettings = { nav.navigate("settings") })
                         }
-                        composable("sources") { SourcesScreen(repo, openVideo) }
+                        composable("sources") { SourcesScreen(repo) }
                         composable("settings") { SettingsScreen(repo, onOpenBlocked = { nav.navigate("blocked") }) }
                         composable("blocked") { BlockedChannelsScreen(repo, onBack = { nav.popBackStack() }) }
                         composable("video/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { e ->

@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SourcesScreen(repo: Repository, onOpen: (String) -> Unit) {
+fun SourcesScreen(repo: Repository) {
     val scope = rememberCoroutineScope()
     val channels by repo.db.channels().sources().collectAsStateWithLifecycle(initialValue = emptyList())
     val playlists by repo.db.playlists().all().collectAsStateWithLifecycle(initialValue = emptyList())
@@ -61,10 +61,8 @@ fun SourcesScreen(repo: Repository, onOpen: (String) -> Unit) {
         busy = true
         scope.launch {
             try {
-                val added = repo.add(input)
+                message = repo.add(input) to false
                 input = ""
-                message = if (added.videoId != null) null else added.message to false
-                added.videoId?.let(onOpen)
             } catch (e: Exception) {
                 message = (e.message ?: "Failed") to true
             }
@@ -79,14 +77,14 @@ fun SourcesScreen(repo: Repository, onOpen: (String) -> Unit) {
                     Text(
                         "Discover shows long videos from these channels and playlists. Paste a channel link, @handle, " +
                             "channel name, or a playlist link (great for curated \"best video essays\" playlists). " +
-                            "Paste a video link to open that one video, for rating something Long Take doesn't list.",
+                            "To rate a single video, find it with Search.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.size(8.dp))
                     OutlinedTextField(
                         value = input, onValueChange = { input = it },
-                        label = { Text("Channel, playlist or video") },
+                        label = { Text("Channel or playlist") },
                         placeholder = { Text("@JacobGeller or a youtube.com link") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

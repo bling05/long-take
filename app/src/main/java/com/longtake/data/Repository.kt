@@ -193,31 +193,18 @@ class Repository(
         db.channels().upsert(listOf(ch.copy(isSource = true, topFetched = existing?.topFetched ?: false)))
     }
 
-    /** What adding something on the Sources screen did; [videoId] is set when it was a single video to open. */
-    data class Added(val message: String, val videoId: String? = null)
-
-    /** Adds a channel or playlist to Discover, or fetches a single video (from its link) so it can be rated. */
-    suspend fun add(input: String): Added {
+    /** Adds a channel or playlist to Discover. Single videos are found through Search instead. */
+    suspend fun add(input: String): String {
         val text = input.trim()
-        // A video link wins even when it also names a playlist (watch?v=…&list=…).
-        val videoId = Regex("""(?:youtube\.com/(?:watch\?(?:.*&)?v=|shorts/|live/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})""")
-            .find(text)?.groupValues?.get(1)
-        if (videoId != null) return addVideo(videoId)
-        return Added(addSource(text))
-    }
-
-    private suspend fun addVideo(id: String): Added {
-        if (db.videos().getVideos(listOf(id)).isEmpty()) {
-            val v = youtube.videos(listOf(id), fromSource = false).firstOrNull() ?: return Added("Couldn't find that video.")
-            db.videos().upsertVideos(listOf(v))
-            refreshChannelStats(listOf(v.channelId))
-        }
-        return Added("Opened the video.", id)
+        val isVideoLink = Regex("""(?:youtube\.com/(?:watch\?|shorts/|live/|embed/)|youtu\.be/)""").containsMatchIn(text)
+        // A video link that also names a playlist (watch?v=…&list=…) still adds the playlist.
+        if (isVideoLink && !Regex("[?&]list=").containsMatchIn(text)) return "That's a single video. Use Search to find and rate it."
+        return addSource(text)
     }
 
     /** Accepts a channel URL, @handle, channel ID, playlist URL, or a plain channel name. */
     private suspend fun addSource(text: String): String {
-        if (text.isBlank()) return "Type a channel, playlist or video."
+        if (text.isBlank()) return "Type a channel or playlist."
         val playlistId = Regex("[?&]list=([A-Za-z0-9_-]+)").find(text)?.groupValues?.get(1)
             ?: text.takeIf { it.matches(Regex("^(PL|OL|UU|FL)[A-Za-z0-9_-]{10,}$")) }
         if (playlistId != null) {
