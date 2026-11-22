@@ -73,11 +73,15 @@
   .thumb img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--thumb-bg); border-radius: 2px; }
   .empty { color: var(--soft); font-style: italic; padding: 24px 0; }
 
+  .pager { margin-top: 20px; display: flex; gap: 18px; align-items: baseline; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft); }
+  .pager[hidden] { display: none; }
   .more {
-    margin-top: 20px; padding: 0; border: 0; background: none; cursor: pointer;
+    padding: 0; border: 0; background: none; cursor: pointer;
     font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--soft);
     text-decoration: underline; text-decoration-color: var(--faint); text-underline-offset: 4px;
   }
+  .more[hidden] { display: none; }
+  .more:disabled { cursor: default; }
   .more:hover { color: var(--ink); text-decoration-color: var(--accent); }
   footer { margin-top: 56px; color: var(--soft); font-size: 15px; }
   footer p { max-width: 36em; }
@@ -96,6 +100,7 @@
     .thumb { grid-column: 2; grid-row: 1; }
     .body { grid-column: 2; grid-row: 2; }
     .title { font-size: 19px; }
+    .thumb { width: 72%; }
   }
 </style>
 </head>
@@ -104,7 +109,11 @@
   <h1>branton's video essay recs</h1>
   <p class="sort">sort: <button type="button" data-sort="stars">favorites</button> · <button type="button" data-sort="recent">recent</button></p>
   <div id="list"><p class="empty">Loading…</p></div>
-  <button type="button" id="more" class="more" hidden>more →</button>
+  <nav class="pager" aria-label="Pages" hidden>
+    <button type="button" id="prev" class="more">← previous</button>
+    <span id="pageno"></span>
+    <button type="button" id="next" class="more">next →</button>
+  </nav>
   <footer>
     <p>Logged with Long Take, a small Android app I made for finding and discussing video essays and stories on YouTube. Please enjoy.</p>
     <span class="signature" role="img" aria-label="BL"></span>
@@ -178,12 +187,15 @@ const thisYear = new Date().getFullYear();
 const monthLabel = d => d.toLocaleDateString("en-GB", { month: "short" }).toLowerCase().slice(0, 3)
   + (d.getFullYear() === thisYear ? "" : ` '${String(d.getFullYear()).slice(2)}`);
 
-// 20 picks per page (?per=N overrides it, for testing).
-const PER_PAGE = Math.min(Math.max(Number(params.get("per")) || 20, 1), 50);
-const more = document.getElementById("more");
+// 10 ratings per page (?per=N overrides it, for testing).
+const PER_PAGE = Math.min(Math.max(Number(params.get("per")) || 10, 1), 50);
+const pager = document.querySelector(".pager");
+const prevBtn = document.getElementById("prev"), nextBtn = document.getElementById("next"), pageNo = document.getElementById("pageno");
 const sortButtons = document.querySelectorAll(".sort button");
-let reader = null, shown = 0, lastRating = null, uid = OWNER_UID;
+let reader = null, pages = [], buffer = [], page = 0, lastRating = null, uid = OWNER_UID;
 let sort = params.get("sort") === "recent" ? "recent" : "stars";
+// A shared link can open on a later page (?page=2); switching sort goes back to page 1.
+let startPage = Math.max((Math.floor(Number(params.get("page"))) || 1) - 1, 0);
 
 function entryHtml(e) {
   const v = e.video, d = new Date(e.updatedAt), note = (e.review || "").trim();
@@ -202,40 +214,54 @@ function entryHtml(e) {
     </article>`;
 }
 
-// Fetch until we have a page's worth of rated videos, or run out.
-async function loadPage() {
-  const picks = [];
-  while (picks.length < PER_PAGE && !reader.done) {
-    const batch = await reader.next(PER_PAGE);
-    picks.push(...batch.filter(e => e.video && e.video.videoId && e.rating >= 1));
+// Pages already read are kept, so going back doesn't read them again.
+// One extra rating is read ahead, so "next" only shows when there really is another page.
+async function fetchPage(n) {
+  while (pages.length <= n) {
+    while (buffer.length <= PER_PAGE && !reader.done) {
+      const batch = await reader.next(PER_PAGE);
+      buffer.push(...batch.filter(e => e.video && e.video.videoId && e.rating >= 1));
+    }
+    if (!buffer.length) break;
+    pages.push(buffer.splice(0, PER_PAGE));
   }
-  if (!shown && !picks.length) { list.innerHTML = `<p class="empty">Nothing here yet.</p>`; return; }
-  if (!shown) list.innerHTML = "";
-  list.insertAdjacentHTML("beforeend", picks.map(entryHtml).join(""));
-  shown += picks.length;
-  more.hidden = reader.done;
+}
+const hasPage = n => n < pages.length || buffer.length > 0;
+
+async function showPage(n, scroll) {
+  await fetchPage(n);
+  if (!pages.length) { list.innerHTML = `<p class="empty">Nothing here yet.</p>`; pager.hidden = true; return; }
+  page = Math.min(n, pages.length - 1);
+  lastRating = null;
+  list.innerHTML = pages[page].map(entryHtml).join("");
+  prevBtn.hidden = page === 0;
+  nextBtn.hidden = !hasPage(page + 1);
+  pageNo.textContent = `page ${page + 1}`;
+  pager.hidden = prevBtn.hidden && nextBtn.hidden;
+  const url = new URL(location.href);
+  if (page > 0) url.searchParams.set("page", page + 1); else url.searchParams.delete("page");
+  history.replaceState(null, "", url);
+  if (scroll) document.querySelector("h1").scrollIntoView({ behavior: "smooth" });
 }
 
-more.addEventListener("click", async () => {
-  more.disabled = true; more.textContent = "loading…";
-  try {
-    await loadPage();
-    more.textContent = "more →";
-  } catch (err) {
-    console.error(err);
-    more.textContent = "couldn't load, try again →";
-  }
-  more.disabled = false;
-});
+async function turn(n, btn, label) {
+  btn.disabled = true; btn.textContent = "loading…";
+  try { await showPage(n, true); btn.textContent = label; }
+  catch (err) { console.error(err); btn.textContent = "couldn't load, try again"; }
+  btn.disabled = false;
+}
+prevBtn.addEventListener("click", () => turn(page - 1, prevBtn, "← previous"));
+nextBtn.addEventListener("click", () => turn(page + 1, nextBtn, "next →"));
 
 // Starts the list over in the chosen order. Favorites is the default; recent is kept in the address (?sort=recent) so it can be shared.
 async function start() {
   sortButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sort === sort)));
-  shown = 0; lastRating = null; more.hidden = true;
+  pages = []; buffer = []; pager.hidden = true;
   list.innerHTML = `<p class="empty">Loading…</p>`;
   reader = ratingReader(uid, sort);
   try {
-    await loadPage();
+    await showPage(startPage, false);
+    startPage = 0;
   } catch (err) {
     list.innerHTML = `<p class="empty">Couldn't load the list right now. Try again in a minute.</p>`;
     console.error(err);
